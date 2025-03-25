@@ -226,12 +226,18 @@ void TargetLoweringBase::InitLibcalls(const Triple &TT) {
 /// GetFPLibCall - Helper to return the right libcall for the given floating
 /// point type, or UNKNOWN_LIBCALL if there is none.
 RTLIB::Libcall RTLIB::getFPLibCall(EVT VT,
+#ifdef MOVIDIUS_PUSHBACK
+                                   RTLIB::Libcall Call_F16,
+#endif // MOVIDIUS_PUSHBACK
                                    RTLIB::Libcall Call_F32,
                                    RTLIB::Libcall Call_F64,
                                    RTLIB::Libcall Call_F80,
                                    RTLIB::Libcall Call_F128,
                                    RTLIB::Libcall Call_PPCF128) {
   return
+#ifdef MOVIDIUS_PUSHBACK
+    VT == MVT::f16 ? Call_F16 :
+#endif // MOVIDIUS_PUSHBACK
     VT == MVT::f32 ? Call_F32 :
     VT == MVT::f64 ? Call_F64 :
     VT == MVT::f80 ? Call_F80 :
@@ -506,17 +512,33 @@ RTLIB::Libcall RTLIB::getUINTTOFP(EVT OpVT, EVT RetVT) {
 }
 
 RTLIB::Libcall RTLIB::getPOWI(EVT RetVT) {
+#ifndef MOVIDIUS_PUSHBACK
   return getFPLibCall(RetVT, POWI_F32, POWI_F64, POWI_F80, POWI_F128,
+#else
+  // ISD::POWI is promoted to FP32 for FP16, so this should never trigger when
+  // targeting SHAVE.
+  return getFPLibCall(RetVT, UNKNOWN_LIBCALL, POWI_F32, POWI_F64, POWI_F80, POWI_F128,
+#endif
                       POWI_PPCF128);
 }
 
 RTLIB::Libcall RTLIB::getLDEXP(EVT RetVT) {
+#ifndef MOVIDIUS_PUSHBACK
   return getFPLibCall(RetVT, LDEXP_F32, LDEXP_F64, LDEXP_F80, LDEXP_F128,
+#else
+  // FIXME: We don't seem to be legalizing this node in SHAVE.
+  return getFPLibCall(RetVT, UNKNOWN_LIBCALL, LDEXP_F32, LDEXP_F64, LDEXP_F80, LDEXP_F128,
+#endif
                       LDEXP_PPCF128);
 }
 
 RTLIB::Libcall RTLIB::getFREXP(EVT RetVT) {
+#ifndef MOVIDIUS_PUSHBACK
   return getFPLibCall(RetVT, FREXP_F32, FREXP_F64, FREXP_F80, FREXP_F128,
+#else
+  // FIXME: We don't seem to be legalizing this node in SHAVE.
+  return getFPLibCall(RetVT, UNKNOWN_LIBCALL, FREXP_F32, FREXP_F64, FREXP_F80, FREXP_F128,
+#endif
                       FREXP_PPCF128);
 }
 

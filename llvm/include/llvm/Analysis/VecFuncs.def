@@ -1067,6 +1067,48 @@ TLI_DEFINE_VECFUNC("tgammaf", "armpl_vtgammaq_f32", FIXED(4), NOMASK, "_ZGV_LLVM
 TLI_DEFINE_VECFUNC("tgamma", "armpl_svtgamma_f64_x",  SCALABLE(2), MASKED, "_ZGVsMxv")
 TLI_DEFINE_VECFUNC("tgammaf", "armpl_svtgamma_f32_x", SCALABLE(4), MASKED, "_ZGVsMxv")
 
+#elif defined(MOVIDIUS_REQUIRED) && defined(TLI_DEFINE_SHAVEVL_VECFUNCS)
+// Intel SHAVE vector library
+#define SHAVE_DEFINE_VECFUNC(s, v, p) TLI_DEFINE_VECFUNC(s, v, FIXED(16), "_ZGV_LLVM_N16" p)
+
+// Math vector functions
+// Scalar LLVM intrinsic
+SHAVE_DEFINE_VECFUNC("llvm.acos.f32",  "vacosf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("llvm.asin.f32",  "vasinf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("llvm.atan.f32",  "vatanf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("llvm.ceil.f32",  "vceilf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("llvm.exp.f32",   "vexpf_v16f32",    "v")
+SHAVE_DEFINE_VECFUNC("llvm.floor.f32", "vfloorf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("llvm.log.f32",   "vlogf_v16f32",    "v")
+SHAVE_DEFINE_VECFUNC("llvm.modf.f32",  "vmodff_v16f32",   "vl16")
+SHAVE_DEFINE_VECFUNC("llvm.pow.f32",   "vpowf_v16f32",    "vv")
+SHAVE_DEFINE_VECFUNC("llvm.round.f32", "vroundf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("llvm.sqrt.f32",  "vsqrtf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("llvm.tan.f32",   "vtanf_v16f32",    "v")
+
+// Scalar math functions
+SHAVE_DEFINE_VECFUNC("acosf",          "vacosf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("acoshf",         "vacoshf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("asinf",          "vasinf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("asinhf",         "vasinhf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("atanf",          "vatanf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("atanhf",         "vatanhf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("ceilf",          "vceilf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("expf",           "vexpf_v16f32",    "v")
+SHAVE_DEFINE_VECFUNC("floorf",         "vfloorf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("fmodf",          "vfmodf_v16f32",   "vv")
+SHAVE_DEFINE_VECFUNC("logf",           "vlogf_v16f32",    "v")
+SHAVE_DEFINE_VECFUNC("log1pf",         "vlog1pf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("modff",          "vmodff_v16f32",   "vl16")
+SHAVE_DEFINE_VECFUNC("__powrf",        "__vpowrf_v16f32", "vv")
+SHAVE_DEFINE_VECFUNC("powf",           "vpowf_v16f32",    "vv")
+SHAVE_DEFINE_VECFUNC("roundf",         "vroundf_v16f32",  "v")
+SHAVE_DEFINE_VECFUNC("sqrtf",          "vsqrtf_v16f32",   "v")
+SHAVE_DEFINE_VECFUNC("tanf",           "vtanf_v16f32",    "v")
+SHAVE_DEFINE_VECFUNC("tanhf",          "vtanhf_v16f32",   "v")
+
+#undef SHAVE_DEFINE_VECFUNC
+
 #else
 #error "Must choose which vector library functions are to be defined."
 #endif

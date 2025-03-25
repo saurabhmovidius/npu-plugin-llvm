@@ -3656,6 +3656,19 @@ APInt IEEEFloat::bitcastToAPInt() const {
   return convertF80LongDoubleAPFloatToAPInt();
 }
 
+#ifdef MOVIDIUS_REQUIRED
+// FIXME: Movidius - should revisit the need for this; LLVM might now do this properly
+float IEEEFloat::convertToHalf() const
+{
+  assert(semantics == (const llvm::fltSemantics*)&semIEEEhalf &&
+         "Float semantics are not IEEEhalf");
+  IEEEFloat NewAPF(*this);
+  bool losesInfo = false;
+  opStatus status = NewAPF.convert(semIEEEsingle, rmNearestTiesToEven, &losesInfo);
+  return (status == opOK) ? NewAPF.convertToFloat() : 0.0f;
+}
+#endif // MOVIDIUS_REQUIRED
+
 float IEEEFloat::convertToFloat() const {
   assert(semantics == (const llvm::fltSemantics*)&semIEEEsingle &&
          "Float semantics are not IEEEsingle");
@@ -5277,6 +5290,21 @@ float APFloat::convertToFloat() const {
   (void)St;
   return Temp.getIEEE().convertToFloat();
 }
+
+#ifdef MOVIDIUS_REQUIRED
+float APFloat::convertToHalf() const {
+  if (&getSemantics() == (const llvm::fltSemantics *)&semIEEEhalf)
+    return getIEEE().convertToHalf();
+  assert(getSemantics().isRepresentableBy(semIEEEhalf) &&
+         "Float semantics is not representable by IEEEhalf");
+  APFloat Temp = *this;
+  bool LosesInfo;
+  opStatus St = Temp.convert(semIEEEhalf, rmNearestTiesToEven, &LosesInfo);
+  assert(!(St & opInexact) && !LosesInfo && "Unexpected imprecision");
+  (void)St;
+  return Temp.getIEEE().convertToHalf();
+}
+#endif // MOVIDIUS_REQUIRED
 
 } // namespace llvm
 

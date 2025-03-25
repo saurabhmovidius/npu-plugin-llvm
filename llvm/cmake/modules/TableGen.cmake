@@ -129,6 +129,7 @@ function(tablegen project ofn)
     COMMAND ${tablegen_exe} ${ARG_UNPARSED_ARGUMENTS} -I ${CMAKE_CURRENT_SOURCE_DIR}
     ${tblgen_includes}
     ${LLVM_TABLEGEN_FLAGS}
+    -I ${CMAKE_BINARY_DIR} # Added to allow SHAVE generated intrinsics files to be located
     ${LLVM_TARGET_DEFINITIONS_ABSOLUTE}
     ${tblgen_change_flag}
     ${additional_cmdline}

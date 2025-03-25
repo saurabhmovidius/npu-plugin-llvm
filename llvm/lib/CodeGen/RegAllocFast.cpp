@@ -1473,8 +1473,10 @@ void RegAllocFast::allocateInstruction(MachineInstr &MI) {
         continue;
       }
 
+#ifndef MOVIDIUS_REQUIRED
       assert((!MO.isTied() || !isClobberedByRegMasks(MO.getReg())) &&
              "tied def assigned to clobbered register");
+#endif // MOVIDIUS_REQUIRED
 
       // Do not free tied operands and early clobbers.
       if (isTiedToNotUndef(MO) || MO.isEarlyClobber())

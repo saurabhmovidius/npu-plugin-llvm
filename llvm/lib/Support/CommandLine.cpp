@@ -41,6 +41,11 @@
 #include "llvm/Support/StringSaver.h"
 #include "llvm/Support/VirtualFileSystem.h"
 #include "llvm/Support/raw_ostream.h"
+
+#ifdef MOVIDIUS_BRANDING
+#include "../lib/Target/SHAVE/SHAVEVersionInfo.h"
+#endif // MOVIDIUS_BRANDING
+
 #include <cstdlib>
 #include <optional>
 #include <string>
@@ -2533,6 +2538,11 @@ class VersionPrinter {
 public:
   void print(std::vector<VersionPrinterTy> ExtraPrinters = {}) {
     raw_ostream &OS = outs();
+#ifdef MOVIDIUS_BRANDING
+    OS << "Intel SHAVE Compiler (moviCompile) " << SHAVEVersionInfo::getLongVersionString () << "\n";
+    OS.flush ();
+#endif // MOVIDIUS_BRANDING
+
 #ifdef PACKAGE_VENDOR
     OS << PACKAGE_VENDOR << " ";
 #else

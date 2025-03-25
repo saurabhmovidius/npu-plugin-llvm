@@ -57,6 +57,12 @@ class TargetInstrInfo;
     /// at.
     IndexedMap<int, VirtReg2IndexFunctor> Virt2StackSlotMap;
 
+#ifdef MOVIDIUS_PUSHBACK
+    /// Virt2StashMap - This is virtual register to stash register
+    /// mapping. Each stashed virtual register has an entry in it
+    /// which corresponds to the stash register allocated to the vreg
+    IndexedMap<int, VirtReg2IndexFunctor> Virt2StashMap;
+#endif // MOVIDIUS_PUSHBACK
     /// Virt2SplitMap - This is virtual register to splitted virtual register
     /// mapping.
     IndexedMap<unsigned, VirtReg2IndexFunctor> Virt2SplitMap;
@@ -188,6 +194,19 @@ class TargetInstrInfo;
       assert(virtReg.isVirtual());
       return Virt2StackSlotMap[virtReg.id()];
     }
+
+#ifdef MOVIDIUS_PUSHBACK
+    /// returns the stash Reg mapped to the specified virtual
+    /// register
+    int getStashReg(unsigned virtReg) const {
+      assert(Register::isVirtualRegister(virtReg));
+      return Virt2StashMap[virtReg];
+    }
+
+    /// populate a mapping for the specified virtual register to
+    /// the next available stash register
+    int  assignVirt2StashReg(unsigned virtReg, unsigned stashReg);
+#endif // MOVIDIUS_PUSHBACK
 
     /// create a mapping for the specifed virtual register to
     /// the next available stack slot

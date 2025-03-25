@@ -152,7 +152,11 @@ public:
   void emitBundleLock(bool AlignToEnd) override;
   void emitBundleUnlock() override;
   void emitBytes(StringRef Data) override;
+#ifndef MOVIDIUS_PUSHBACK
   void emitValueToAlignment(Align Alignment, int64_t Value = 0,
+#else
+  void emitValueToAlignment(Align Alignment, std::optional<int64_t> Value = 0,
+#endif
                             unsigned ValueSize = 1,
                             unsigned MaxBytesToEmit = 0) override;
   void emitCodeAlignment(Align ByteAlignment, const MCSubtargetInfo *STI,

@@ -36,6 +36,9 @@ namespace RTLIB {
   /// GetFPLibCall - Helper to return the right libcall for the given floating
   /// point type, or UNKNOWN_LIBCALL if there is none.
   Libcall getFPLibCall(EVT VT,
+#ifdef MOVIDIUS_PUSHBACK
+                       Libcall Call_F16,
+#endif // MOVIDIUS_PUSHBACK
                        Libcall Call_F32,
                        Libcall Call_F64,
                        Libcall Call_F80,

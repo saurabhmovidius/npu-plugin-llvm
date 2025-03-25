@@ -76,7 +76,12 @@ public:
 
   void emitIdent(StringRef IdentString) override;
 
+#ifndef MOVIDIUS_PUSHBACK
   void emitValueToAlignment(Align, int64_t, unsigned, unsigned) override;
+#else
+  void emitValueToAlignment(Align, std::optional<int64_t>, unsigned,
+                            unsigned) override;
+#endif
 
   void emitCGProfileEntry(const MCSymbolRefExpr *From,
                           const MCSymbolRefExpr *To, uint64_t Count) override;

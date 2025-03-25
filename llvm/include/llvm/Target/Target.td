@@ -1029,6 +1029,9 @@ def i16imm : Operand<i16>;
 def i32imm : Operand<i32>;
 def i64imm : Operand<i64>;
 
+// #ifdef MOVIDIUS_PUSHBACK
+def f16imm : Operand<f16>;
+// #endif // MOVIDIUS_PUSHBACK
 def f32imm : Operand<f32>;
 def f64imm : Operand<f64>;
 }

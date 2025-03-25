@@ -47,6 +47,21 @@ private:
   SmallVector<const char *, 0> Args;
   std::optional<PrettyStackTraceProgram> StackPrinter;
 };
+#if defined(MOVIDIUS_REQUIRED)
+class InitLLVMDLL {
+public:
+  InitLLVMDLL(int &Argc, const char **&Argv);
+  InitLLVMDLL(int &Argc, char **&Argv)
+    : InitLLVMDLL(Argc, const_cast<const char **&>(Argv)) {}
+
+  ~InitLLVMDLL();
+
+private:
+  BumpPtrAllocator Alloc;
+  SmallVector<const char *, 0> Args;
+  PrettyStackTraceProgram StackPrinter;
+};
+#endif // MOVIDIUS_REQUIRED
 } // namespace llvm
 
 #endif

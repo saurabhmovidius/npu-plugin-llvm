@@ -1229,7 +1229,12 @@ void MCStreamer::emitSLEB128Value(const MCExpr *Value) {}
 void MCStreamer::emitFill(const MCExpr &NumBytes, uint64_t Value, SMLoc Loc) {}
 void MCStreamer::emitFill(const MCExpr &NumValues, int64_t Size, int64_t Expr,
                           SMLoc Loc) {}
+#ifndef MOVIDIUS_PUSHBACK
 void MCStreamer::emitValueToAlignment(Align Alignment, int64_t Value,
+#else
+void MCStreamer::emitValueToAlignment(Align Alignment,
+                                      std::optional<int64_t> Value,
+#endif
                                       unsigned ValueSize,
                                       unsigned MaxBytesToEmit) {}
 void MCStreamer::emitCodeAlignment(Align Alignment, const MCSubtargetInfo *STI,

@@ -85,6 +85,10 @@ gen_arch_intrinsics("IntrinsicsS390") {
   intrinsic_prefix = "s390"
 }
 
+gen_arch_intrinsics("IntrinsicsShave") {
+  intrinsic_prefix = "shave"
+}
+
 gen_arch_intrinsics("IntrinsicsVE") {
   intrinsic_prefix = "ve"
 }

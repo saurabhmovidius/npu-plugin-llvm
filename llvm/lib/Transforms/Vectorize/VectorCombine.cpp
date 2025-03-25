@@ -1349,6 +1349,13 @@ bool VectorCombine::scalarizeLoadExtract(Instruction &I) {
         LI->getAlign(), VecTy->getElementType(), Idx, DL);
     NewLoad->setAlignment(ScalarOpAlignment);
 
+#ifdef MOVIDIUS_REQUIRED
+    // Maintain alias.scope and noalias information for scalarised loads to allow
+    // further optimisation (and better scheduling on SHAVE)
+    if (I.hasMetadata())
+      NewLoad->setAAMetadata(I.getAAMetadata());
+#endif // MOVIDIUS_REQUIRED
+
     replaceValue(*EI, *NewLoad);
   }
 

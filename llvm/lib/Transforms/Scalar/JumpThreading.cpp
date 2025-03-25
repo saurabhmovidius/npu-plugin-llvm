@@ -1687,6 +1687,7 @@ bool JumpThreadingPass::processThreadableEdges(Value *Cond, BasicBlock *BB,
   // threadable destination (the common case) we can avoid this.
   BasicBlock *MostPopularDest = OnlyDest;
 
+#ifndef MOVIDIUS_REQUIRED
   if (MostPopularDest == MultipleDestSentinel) {
     // Remove any loop headers from the Dest list, threadEdge conservatively
     // won't process them, but we might have other destination that are eligible
@@ -1701,7 +1702,10 @@ bool JumpThreadingPass::processThreadableEdges(Value *Cond, BasicBlock *BB,
 
     MostPopularDest = findMostPopularDest(BB, PredToDestList);
   }
-
+#else  // MOVIDIUS_REQUIRED
+  if (MostPopularDest == MultipleDestSentinel)
+    MostPopularDest = findMostPopularDest(BB, PredToDestList);
+#endif // MOVIDIUS_REQUIRED
   // Now that we know what the most popular destination is, factor all
   // predecessors that will jump to it into a single predecessor.
   SmallVector<BasicBlock*, 16> PredsToFactor;

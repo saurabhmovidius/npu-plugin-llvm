@@ -54,8 +54,19 @@ class CalleeSavedInfo {
   /// register.
   bool SpilledToReg = false;
 
+#ifdef MOVIDIUS_PUSHBACK
+  // Movidius implementation of spilling to register
+  // FIXME-2019: Is this still needed. llvm9 has another implementation of this
+  unsigned StashReg;
+#endif // MOVIDIUS_PUSHBACK
+
 public:
+#ifndef MOVIDIUS_PUSHBACK
   explicit CalleeSavedInfo(unsigned R, int FI = 0) : Reg(R), FrameIdx(FI) {}
+#else // MOVIDIUS_PUSHBACK
+  explicit CalleeSavedInfo(unsigned R, int FI = 0, unsigned SR = 0)
+    : Reg(R), FrameIdx(FI), StashReg(SR) {}
+#endif // MOVIDIUS_PUSHBACK
 
   // Accessors.
   Register getReg()                        const { return Reg; }
@@ -71,6 +82,12 @@ public:
   }
   bool isRestored()                        const { return Restored; }
   void setRestored(bool R)                       { Restored = R; }
+
+#ifdef MOVIDIUS_PUSHBACK
+  unsigned getStashReg()                   const { return StashReg; }
+  void setStashReg(unsigned SR)                  { StashReg = SR; }
+#endif // MOVIDIUS_PUSHBACK
+
   bool isSpilledToReg()                    const { return SpilledToReg; }
 };
 

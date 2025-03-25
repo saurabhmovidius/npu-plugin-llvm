@@ -21,6 +21,9 @@
 #include "llvm/Support/Format.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/SourceMgr.h"
+#ifndef MOVIDIUS_REQUIRED
+#include <optional>
+#endif
 #include <string>
 
 #ifdef __linux__
@@ -186,7 +189,12 @@ private:
   bool emitSymbolAttribute(MCSymbol *Symbol, MCSymbolAttr Attribute) override {
     return false;
   }
+#ifndef MOVIDIUS_REQUIRED
   void emitValueToAlignment(Align Alignment, int64_t Value, unsigned ValueSize,
+#else
+  void emitValueToAlignment(Align Alignment, std::optional<int64_t> Value,
+                            unsigned ValueSize,
+#endif
                             unsigned MaxBytesToEmit) override {}
   void emitZerofill(MCSection *Section, MCSymbol *Symbol, uint64_t Size,
                     Align ByteAlignment, SMLoc Loc) override {}

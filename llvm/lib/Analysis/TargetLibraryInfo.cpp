@@ -36,8 +36,15 @@ static cl::opt<TargetLibraryInfoImpl::VectorLibrary> ClVectorLibrary(
                           "Intel SVML library"),
                clEnumValN(TargetLibraryInfoImpl::SLEEFGNUABI, "sleefgnuabi",
                           "SIMD Library for Evaluating Elementary Functions"),
+#ifndef MOVIDIUS_REQUIRED
                clEnumValN(TargetLibraryInfoImpl::ArmPL, "ArmPL",
                           "Arm Performance Libraries")));
+#else // MOVIDIUS_REQUIRED
+               clEnumValN(TargetLibraryInfoImpl::ArmPL, "ArmPL",
+                          "Arm Performance Libraries"),
+               clEnumValN(TargetLibraryInfoImpl::SHAVEVL, "SHAVEVL",
+                          "Intel SHAVE vector library")));
+#endif // MOVIDIUS_REQUIRED
 
 StringLiteral const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] =
     {
@@ -189,6 +196,56 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
   // is a 16-bit architecture because then it most likely is 16 bits. If that
   // isn't true for a target those defaults should be overridden below.
   TLI.setIntSize(T.isArch16Bit() ? 16 : 32);
+
+#ifdef MOVIDIUS_REQUIRED
+  // Fix for bug #29023
+  // Prevent LLVM from replacing long double math library callsites with equivalent intrinsics
+  // LLVM later assumes that the "double" variants of these functions are 64-bits
+  // For example, this causes calls to cosl to be replaced with calls to cos
+  if (T.getArch() == Triple::shave) {
+    TLI.setUnavailable(LibFunc_acoshl);
+    TLI.setUnavailable(LibFunc_acosl);
+    TLI.setUnavailable(LibFunc_asinhl);
+    TLI.setUnavailable(LibFunc_asinl);
+    TLI.setUnavailable(LibFunc_atan2l);
+    TLI.setUnavailable(LibFunc_atanhl);
+    TLI.setUnavailable(LibFunc_atanl);
+    TLI.setUnavailable(LibFunc_cabsl);
+    TLI.setUnavailable(LibFunc_cbrtl);
+    TLI.setUnavailable(LibFunc_ceill);
+    TLI.setUnavailable(LibFunc_copysignl);
+    TLI.setUnavailable(LibFunc_coshl);
+    TLI.setUnavailable(LibFunc_cosl);
+    TLI.setUnavailable(LibFunc_exp10l);
+    TLI.setUnavailable(LibFunc_exp2l);
+    TLI.setUnavailable(LibFunc_expl);
+    TLI.setUnavailable(LibFunc_expm1l);
+    TLI.setUnavailable(LibFunc_fabsl);
+    TLI.setUnavailable(LibFunc_floorl);
+    TLI.setUnavailable(LibFunc_fmaxl);
+    TLI.setUnavailable(LibFunc_fminl);
+    TLI.setUnavailable(LibFunc_fmodl);
+    TLI.setUnavailable(LibFunc_frexpl);
+    TLI.setUnavailable(LibFunc_ldexpl);
+    TLI.setUnavailable(LibFunc_log10l);
+    TLI.setUnavailable(LibFunc_log1pl);
+    TLI.setUnavailable(LibFunc_log2l);
+    TLI.setUnavailable(LibFunc_logbl);
+    TLI.setUnavailable(LibFunc_logl);
+    TLI.setUnavailable(LibFunc_modfl);
+    TLI.setUnavailable(LibFunc_nearbyintl);
+    TLI.setUnavailable(LibFunc_powl);
+    TLI.setUnavailable(LibFunc_rintl);
+    TLI.setUnavailable(LibFunc_roundl);
+    TLI.setUnavailable(LibFunc_sinhl);
+    TLI.setUnavailable(LibFunc_sinl);
+    TLI.setUnavailable(LibFunc_sqrtl);
+    TLI.setUnavailable(LibFunc_strtold);
+    TLI.setUnavailable(LibFunc_tanhl);
+    TLI.setUnavailable(LibFunc_tanl);
+    TLI.setUnavailable(LibFunc_truncl);
+  }
+#endif // MOVIDIUS_REQUIRED
 
   // There is really no runtime library on AMDGPU, apart from
   // __kmpc_alloc/free_shared.
@@ -873,6 +930,18 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
   }
 
   TLI.addVectorizableFunctionsFromVecLib(ClVectorLibrary, T);
+
+#ifdef MOVIDIUS_FIXME
+  // Disable all library optimisations not supported by SHAVE
+  if (T.getArch() == Triple::shave) {
+    // FIXME: Movidius - If this is removed, most of the 'i8' versions of the 'TSVC-split' tests get
+    // slower!  Need to determine why
+    // The 'memset' substitution is sub-optimal until such time as we implement the builtin
+    // This might also be true for other 'mem*' and 'str*' functions, but they havn't yet come up as an issue
+
+    TLI.setUnavailable(LibFunc::LibFunc_memset);
+  }
+#endif // MOVIDIUS_FIXME
 }
 
 TargetLibraryInfoImpl::TargetLibraryInfoImpl() {
@@ -1273,6 +1342,16 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
     }
     break;
   }
+#ifdef MOVIDIUS_REQUIRED
+  case SHAVEVL: {
+    const VecDesc VecFuncs[] = {
+#define TLI_DEFINE_SHAVEVL_VECFUNCS
+#include "llvm/Analysis/VecFuncs.def"
+    };
+    addVectorizableFunctions(VecFuncs);
+    break;
+  }
+#endif // MOVIDIUS_REQUIRED
   case NoLibrary:
     break;
   }

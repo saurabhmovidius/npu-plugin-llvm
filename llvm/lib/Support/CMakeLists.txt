@@ -188,6 +188,7 @@ add_llvm_component_library(LLVMSupport
   GraphWriter.cpp
   Hashing.cpp
   InitLLVM.cpp
+  InitLLVMDLL.cpp
   InstructionCost.cpp
   IntEqClasses.cpp
   IntervalMap.cpp

@@ -53,6 +53,9 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Metadata.h"
+#ifdef MOVIDIUS_REQUIRED
+#include "llvm/MC/TargetRegistry.h"
+#endif // MOVIDIUS_REQUIRED
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/CommandLine.h"
@@ -2975,6 +2978,15 @@ SDValue DAGCombiner::visitADD(SDNode *N) {
     return V;
 
   // fold (a+b) -> (a|b) iff a and b share no bits.
+#ifdef MOVIDIUS_FIXME
+  // FIXME: Movidius - if this optimisation is not disabled, the code generated causes some
+  //        programs to fail.  It is not clear why because the logic of the optimisation looks
+  //        good, and both OR and ADD have the same execution cost.
+  //        The 2 examples that fail are:
+  //          'src/mvLibs/mlibcxx/std/containers/associative/multimap/iterator.pass.cpp' at '-O3'
+  //          'src/mvLibs/mlibcxx/std/utilities/template.bitset/bitset.members/op_xor_eq.pass.cpp' at '-O3'
+  if (StringRef("shave") != TLI.getTargetMachine().getTarget().getName())
+#endif // MOVIDIUS_FIXME
   if ((!LegalOperations || TLI.isOperationLegal(ISD::OR, VT)) &&
       DAG.haveNoCommonBitsSet(N0, N1))
     return DAG.getNode(ISD::OR, DL, VT, N0, N1);
@@ -20941,12 +20953,26 @@ SDValue DAGCombiner::replaceStoreOfFPConstant(StoreSDNode *ST) {
   switch (CFP->getSimpleValueType(0).SimpleTy) {
   default:
     llvm_unreachable("Unknown FP type");
+#ifndef MOVIDIUS_REQUIRED
   case MVT::f16:    // We don't do this for these yet.
+#endif // MOVIDIUS_REQUIRED
   case MVT::bf16:
   case MVT::f80:
   case MVT::f128:
   case MVT::ppcf128:
     return SDValue();
+#ifdef MOVIDIUS_REQUIRED
+  case MVT::f16:
+    if ((isTypeLegal(MVT::i16) && !LegalOperations && !ST->isVolatile()) ||
+        TLI.isOperationLegalOrCustom(ISD::STORE, MVT::i16)) {
+      Tmp = DAG.getConstant((uint16_t)CFP->getValueAPF().
+                            bitcastToAPInt().getZExtValue(), SDLoc(CFP),
+                            MVT::i16);
+      return DAG.getStore(Chain, DL, Tmp, Ptr, ST->getMemOperand());
+    }
+
+    return SDValue();
+#endif // MOVIDIUS_REQUIRED
   case MVT::f32:
     if ((isTypeLegal(MVT::i32) && !LegalOperations && ST->isSimple()) ||
         TLI.isOperationLegalOrCustom(ISD::STORE, MVT::i32)) {

@@ -529,6 +529,38 @@ void sys::PrintStackTraceOnErrorSignal(StringRef Argv0,
   RegisterHandler();
   LeaveCriticalSection(&CriticalSection);
 }
+
+#ifdef MOVIDIUS_REQUIRED
+// See Bugzilla bug #32821. Certain resources don't get cleaned up by LLVM so we
+// have to do it here. This should only be used by the DLL builds of clang. Default
+// behaviour remains the same for all other tools that use this support library.
+void sys::TeardownDLL() {
+  // Most of this function has been duplicated from Cleanup() in this file. With the following exceptions:
+  //   Call to RunSignalHandlers has been removed
+  //   The deletion of the critical section and FilesToRemove at the end has been added
+  if (CleanupExecuted)
+    return;
+
+  EnterCriticalSection(&CriticalSection);
+
+  // Prevent other thread from registering new files and directories for
+  // removal, should we be executing because of the console handler callback.
+  CleanupExecuted = true;
+
+  // FIXME: open files cannot be deleted.
+  if (FilesToRemove != NULL)
+    while (!FilesToRemove->empty()) {
+      llvm::sys::fs::remove(FilesToRemove->back());
+      FilesToRemove->pop_back();
+    }
+
+  LeaveCriticalSection(&CriticalSection);
+
+  DeleteCriticalSection(&CriticalSection);
+  delete FilesToRemove;
+  CriticalSectionInitialized = false;
+}
+#endif // MOVIDIUS_REQUIRED
 } // namespace llvm
 
 #if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)

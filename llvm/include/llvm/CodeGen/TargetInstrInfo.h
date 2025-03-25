@@ -1128,6 +1128,33 @@ public:
                      "TargetInstrInfo::loadRegFromStackSlot!");
   }
 
+#ifdef MOVIDIUS_PUSHBACK
+  /// Stash the specified register of the given register class to the specified
+  /// vector stash register. The stash instruction is to be added to the given
+  /// machine basic block before the specified machine instruction. If isKill
+  /// is true, the register operand is the last use and must be marked kill.
+  virtual void storeRegToStashReg(MachineBasicBlock &MBB,
+                                  MachineBasicBlock::iterator MI,
+                                  Register SrcReg, bool isKill, unsigned VirtReg, Register StashReg, 
+                                  const TargetRegisterClass *RC,
+                                  const TargetRegisterInfo *TRI) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::storeRegToStashReg!");
+  }
+
+  /// Load the specified register of the given register class from the specified
+  /// vector stash register. The load instruction is to be added to the given
+  /// machine basic block before the specified machine instruction.
+  virtual void loadRegFromStashReg(MachineBasicBlock &MBB,
+                                   MachineBasicBlock::iterator MI,
+                                   Register DestReg, unsigned VirtReg, Register stashReg,
+                                   const TargetRegisterClass *RC,
+                                   const TargetRegisterInfo *TRI) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::loadRegFromStashReg!");
+  }
+#endif // MOVIDIUS_PUSHBACK
+
   /// This function is called for all pseudo instructions
   /// that remain after register allocation. Many pseudo instructions are
   /// created to help register allocation. This is the place to convert them

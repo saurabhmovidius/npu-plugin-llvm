@@ -163,6 +163,9 @@ class InlineSpiller : public Spiller {
   LiveRangeEdit *Edit = nullptr;
   LiveInterval *StackInt = nullptr;
   int StackSlot;
+#ifdef MOVIDIUS_PUSHBACK
+  unsigned StashReg;
+#endif // MOVIDIUS_PUSHBACK
   Register Original;
 
   // All registers to spill to StackSlot, including the main register.
@@ -1144,6 +1147,11 @@ void InlineSpiller::spillAroundUses(Register Reg) {
   LLVM_DEBUG(dbgs() << "spillAroundUses " << printReg(Reg) << '\n');
   LiveInterval &OldLI = LIS.getInterval(Reg);
 
+#ifdef MOVIDIUS_PUSHBACK
+  // Use a temporary vreg for stash-retrieve while traversing the def-use list
+  unsigned tmpStashVReg = Edit->createFrom(Edit->getReg());
+#endif // MOVIDIUS_PUSHBACK
+
   // Iterate over instructions using Reg.
   for (MachineInstr &MI : llvm::make_early_inc_range(MRI.reg_bundles(Reg))) {
     // Debug values are not allowed to affect codegen.
@@ -1177,6 +1185,58 @@ void InlineSpiller::spillAroundUses(Register Reg) {
     if (VNInfo *VNI = OldLI.getVNInfoAt(Idx.getRegSlot(true)))
       if (SlotIndex::isSameInstr(Idx, VNI->def))
         Idx = VNI->def;
+
+#ifdef MOVIDIUS_PUSHBACK
+    if (StashReg != VirtRegMap::NO_PHYS_REG) {
+      // Create a new virtual register as intermediate for stash/retrieve
+      unsigned NewVReg = Edit->createFrom(Edit->getReg());
+      MachineBasicBlock &MBB = *MI.getParent();
+
+      if (RI.Reads) {
+        MachineBasicBlock &MBB = *MI.getParent();
+
+        MachineInstrSpan MIS(&MI, MI.getParent());
+        TII.loadRegFromStashReg(MBB, &MI, NewVReg, tmpStashVReg, StashReg,
+                                MRI.getRegClass(NewVReg), &TRI);
+        LIS.InsertMachineInstrRangeInMaps(MIS.begin(), &MI);
+
+        LLVM_DEBUG(dumpMachineInstrRangeWithSlotIndex(MIS.begin(), &MI, LIS, "reload",
+              NewVReg));
+      }
+
+      // Rewrite instruction operands.
+      bool hasLiveDef = false;
+      for (const auto &OpPair : Ops) {
+        MachineOperand &MO = OpPair.first->getOperand(OpPair.second);
+        MO.setReg(NewVReg);
+        if (MO.isUse()) {
+          if (!OpPair.first->isRegTiedToDefOperand(OpPair.second))
+            MO.setIsKill();
+        } else {
+          if (!MO.isDead())
+            hasLiveDef = true;
+        }
+      }
+
+      LLVM_DEBUG(dbgs() << "\trewrite: " << Idx << '\t' << MI << '\n');
+
+      // FIXME: Movidius - Use a second vreg if instruction has no tied ops.
+      if (RI.Writes) {
+        if (hasLiveDef) {
+          MachineInstrSpan MIS(&MI, MI.getParent());
+          MachineBasicBlock::iterator I = &MI;
+
+          TII.storeRegToStashReg(MBB, std::next(I), NewVReg, true, tmpStashVReg, StashReg,
+                                 MRI.getRegClass(NewVReg), &TRI);
+          LIS.InsertMachineInstrRangeInMaps(std::next(I), MIS.end());
+
+          LLVM_DEBUG(dumpMachineInstrRangeWithSlotIndex(std::next(I), MIS.end(), LIS,
+            "spill"));
+        }
+      }
+      continue;
+    }
+#endif // MOVIDIUS_PUSHBACK
 
     // Check for a sibling copy.
     Register SibReg = isCopyOfBundle(MI, Reg, TII);
@@ -1233,11 +1293,24 @@ void InlineSpiller::spillAroundUses(Register Reg) {
       if (hasLiveDef)
         insertSpill(NewVReg, true, &MI);
   }
+
+#ifdef MOVIDIUS_PUSHBACK
+  // Rename the temporary stash register usages to the original vreg
+  MRI.replaceRegWith(tmpStashVReg, Edit->getReg());
+  Edit->eraseVirtReg(tmpStashVReg);
+#endif // MOVIDIUS_PUSHBACK
 }
 
 /// spillAll - Spill all registers remaining after rematerialization.
 void InlineSpiller::spillAll() {
   // Update LiveStacks now that we are committed to spilling.
+#ifdef MOVIDIUS_PUSHBACK
+  // Set the stack intervals only if not stashing
+  if (StashReg != VirtRegMap::NO_PHYS_REG) {
+     if (Original != Edit->getReg())
+       VRM.assignVirt2StashReg(Edit->getReg(), StashReg);
+  } else {
+#endif // MOVIDIUS_PUSHBACK
   if (StackSlot == VirtRegMap::NO_STACK_SLOT) {
     StackSlot = VRM.assignVirt2StackSlot(Original);
     StackInt = &LSS.getOrCreateInterval(StackSlot, MRI.getRegClass(Original));
@@ -1253,6 +1326,9 @@ void InlineSpiller::spillAll() {
     StackInt->MergeSegmentsInAsValue(LIS.getInterval(Reg),
                                      StackInt->getValNumInfo(0));
   LLVM_DEBUG(dbgs() << "Merged spilled regs: " << *StackInt << '\n');
+#ifdef MOVIDIUS_PUSHBACK
+  }
+#endif // MOVIDIUS_PUSHBACK
 
   // Spill around uses of all RegsToSpill.
   for (Register Reg : RegsToSpill)
@@ -1263,6 +1339,12 @@ void InlineSpiller::spillAll() {
     LLVM_DEBUG(dbgs() << "Eliminating " << DeadDefs.size() << " dead defs\n");
     Edit->eliminateDeadDefs(DeadDefs, RegsToSpill);
   }
+
+#ifdef MOVIDIUS_PUSHBACK
+  // If we haven't spilled to the stack, we are done
+  if (StashReg != VirtRegMap::NO_PHYS_REG)
+    return;
+#endif // MOVIDIUS_PUSHBACK
 
   // Finally delete the SnippetCopies.
   for (Register Reg : RegsToSpill) {
@@ -1288,6 +1370,9 @@ void InlineSpiller::spill(LiveRangeEdit &edit) {
   // Share a stack slot among all descendants of Original.
   Original = VRM.getOriginal(edit.getReg());
   StackSlot = VRM.getStackSlot(Original);
+#ifdef MOVIDIUS_PUSHBACK
+  StashReg = VRM.getStashReg(Original);
+#endif // MOVIDIUS_PUSHBACK
   StackInt = nullptr;
 
   LLVM_DEBUG(dbgs() << "Inline spilling "

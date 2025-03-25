@@ -833,6 +833,18 @@ public:
     return RC;
   }
 
+#ifdef MOVIDIUS_PUSHBACK
+  /// Returns the wider register class to be used to stash registers in the 
+  /// class RC. Multiple registers of RC class will be stashed into individual
+  /// registers of the returned class instead of being spilled onto the stack
+  virtual const TargetRegisterClass *
+  getVectorStashClass(const TargetRegisterClass *RC,
+                      const MachineFunction &) const {
+    /// The default implementation disables stashing for all register classes
+    return nullptr;
+  }
+#endif // MOVIDIUS_PUSHBACK
+
   /// Return the register pressure "high water mark" for the specific register
   /// class. The scheduler is in high register pressure mode (for the specific
   /// register class) if it goes over the limit.

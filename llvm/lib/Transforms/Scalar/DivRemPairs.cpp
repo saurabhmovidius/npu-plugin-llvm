@@ -122,7 +122,11 @@ using DivRemWorklistTy = SmallVector<DivRemPairWorklistEntry, 4>;
 static DivRemWorklistTy getWorklist(Function &F) {
   // Insert all divide and remainder instructions into maps keyed by their
   // operands and opcode (signed or unsigned).
+#ifdef MOVIDIUS_PUSHBACK
+  MapVector<DivRemMapKey, Instruction *> DivMap;
+#else // MOVIDIUS_PUSHBACK
   DenseMap<DivRemMapKey, Instruction *> DivMap;
+#endif // MOVIDIUS_PUSHBACK
   // Use a MapVector for RemMap so that instructions are moved/inserted in a
   // deterministic order.
   MapVector<DivRemMapKey, Instruction *> RemMap;

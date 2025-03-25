@@ -1189,6 +1189,11 @@ static inline Constant *getFuncAddrForProfData(Function *Fn) {
 }
 
 static bool needsRuntimeRegistrationOfSectionRange(const Triple &TT) {
+#ifdef MOVIDIUS_REQUIRED
+  // FIXME This is probably no longer required.
+  if (TT.getArch() == Triple::shave)
+    return false;
+#endif // MOVIDIUS_REQUIRED
   // compiler-rt uses linker support to get data/counters/name start/end for
   // ELF, COFF, Mach-O and XCOFF.
   if (TT.isOSBinFormatELF() || TT.isOSBinFormatCOFF() ||

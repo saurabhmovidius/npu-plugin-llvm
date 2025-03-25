@@ -80,7 +80,11 @@ MachineBasicBlock *MachineLoop::getBottomBlock() {
     MachineBasicBlock *NextMBB = &*std::next(BotMBB->getIterator());
     while (contains(NextMBB)) {
       BotMBB = NextMBB;
+#ifndef MOVIDIUS_REQUIRED
       if (BotMBB == &*std::next(BotMBB->getIterator()))
+#else // MOVIDIUS_REQUIRED
+      if (BotMBB->getIterator() == std::prev(End) || BotMBB == &*std::next(BotMBB->getIterator()))
+#endif // MOVIDIUS_REQUIRED
         break;
       NextMBB = &*std::next(BotMBB->getIterator());
     }

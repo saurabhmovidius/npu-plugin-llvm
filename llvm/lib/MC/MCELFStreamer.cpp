@@ -369,7 +369,12 @@ void MCELFStreamer::emitValueImpl(const MCExpr *Value, unsigned Size,
   MCObjectStreamer::emitValueImpl(Value, Size, Loc);
 }
 
+#ifndef MOVIDIUS_PUSHBACK
 void MCELFStreamer::emitValueToAlignment(Align Alignment, int64_t Value,
+#else
+void MCELFStreamer::emitValueToAlignment(Align Alignment,
+                                         std::optional<int64_t> Value,
+#endif
                                          unsigned ValueSize,
                                          unsigned MaxBytesToEmit) {
   if (isBundleLocked())

@@ -2602,5 +2602,8 @@ include "llvm/IR/IntrinsicsSPIRV.td"
 include "llvm/IR/IntrinsicsVE.td"
 include "llvm/IR/IntrinsicsDirectX.td"
 include "llvm/IR/IntrinsicsLoongArch.td"
+// #ifdef MOVIDIUS_REQUIRED
+include "llvm/IR/IntrinsicsShave.td"
+// #endif // MOVIDIUS_REQUIRED
 
 #endif // TEST_INTRINSICS_SUPPRESS_DEFS

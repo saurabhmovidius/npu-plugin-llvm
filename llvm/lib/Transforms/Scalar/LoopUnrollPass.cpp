@@ -1258,6 +1258,27 @@ tryToUnrollLoop(Loop *L, DominatorTree &DT, LoopInfo *LI, ScalarEvolution &SE,
   if (!UP.Count)
     return LoopUnrollResult::Unmodified;
 
+#ifdef MOVIDIUS_FIXME
+  // This is a hack to prevent vectorized loops, often interleaved, to be
+  // further unrolled via command-line or pragma.
+  if (IsCountSetExplicitly &&
+      getBooleanLoopAttribute(L, "llvm.loop.isvectorized")) {
+    // Skip warning for generated epilogs.
+    if (!L->getName().contains("epilog"))
+      ORE.emit(
+          DiagnosticInfoOptimizationFailure(DEBUG_TYPE,
+                                            "FailedUnrollAfterVectorize",
+                                            L->getStartLoc(), L->getHeader())
+          << "Refusing to unroll loop as directed by unroll pragma because "
+             "loop has already been vectorized.");
+
+    // Mark loop as unrolled to prevent further unrolling attempts or
+    // 'missed-transform' diagnostics.
+    L->setLoopAlreadyUnrolled();
+    return LoopUnrollResult::Unmodified;
+  }
+#endif // MOVIDIUS_FIXME
+
   if (PP.PeelCount) {
     assert(UP.Count == 1 && "Cannot perform peel and unroll in the same step");
     LLVM_DEBUG(dbgs() << "PEELING loop %" << L->getHeader()->getName()

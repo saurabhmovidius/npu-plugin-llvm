@@ -640,12 +640,22 @@ void MCObjectStreamer::emitBytes(StringRef Data) {
   DF->getContents().append(Data.begin(), Data.end());
 }
 
+#ifndef MOVIDIUS_PUSHBACK
 void MCObjectStreamer::emitValueToAlignment(Align Alignment, int64_t Value,
+#else
+void MCObjectStreamer::emitValueToAlignment(Align Alignment,
+                                            std::optional<int64_t> Value,
+#endif
                                             unsigned ValueSize,
                                             unsigned MaxBytesToEmit) {
   if (MaxBytesToEmit == 0)
     MaxBytesToEmit = Alignment.value();
+#ifndef MOVIDIUS_PUSHBACK
   insert(new MCAlignFragment(Alignment, Value, ValueSize, MaxBytesToEmit));
+#else
+  insert(
+      new MCAlignFragment(Alignment, Value.value(), ValueSize, MaxBytesToEmit));
+#endif
 
   // Update the maximum alignment on the current section if necessary.
   MCSection *CurSec = getCurrentSectionOnly();

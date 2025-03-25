@@ -27,6 +27,7 @@
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
+#include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCSymbolXCOFF.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Casting.h"
@@ -258,7 +259,12 @@ public:
                               std::optional<int64_t> Value, unsigned ValueSize,
                               unsigned MaxBytesToEmit);
 
+#ifndef MOVIDIUS_PUSHBACK
   void emitValueToAlignment(Align Alignment, int64_t Value = 0,
+#else
+  void emitValueToAlignment(Align Alignment,
+                            std::optional<int64_t> Value = std::nullopt,
+#endif
                             unsigned ValueSize = 1,
                             unsigned MaxBytesToEmit = 0) override;
 
@@ -671,6 +677,17 @@ void MCAsmStreamer::emitThumbFunc(MCSymbol *Func) {
 }
 
 void MCAsmStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
+#ifdef MOVIDIUS_REQUIRED
+  // FIXME: Movidius - need to make this dependent on the target and the 'Value' also being a symbol
+  if (true) {
+//  if ( target is shave && Value is a symbol )
+    OS << ".alias\t";
+    Symbol->print(OS, MAI);
+    OS << " ";
+    Value->print(OS, MAI);
+    EmitEOL();
+  } else {
+#endif // MOVIDIUS_REQUIRED
   // Do not emit a .set on inlined target assignments.
   bool EmitSet = true;
   if (auto *E = dyn_cast<MCTargetExpr>(Value))
@@ -684,6 +701,9 @@ void MCAsmStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
 
     EmitEOL();
   }
+#ifdef MOVIDIUS_REQUIRED
+  }
+#endif // MOVIDIUS_REQUIRED
 
   MCStreamer::emitAssignment(Symbol, Value);
 }
@@ -1234,6 +1254,36 @@ void MCAsmStreamer::PrintQuotedString(StringRef Data, raw_ostream &OS) const {
 void MCAsmStreamer::emitBytes(StringRef Data) {
   assert(getCurrentSectionOnly() &&
          "Cannot emit contents before setting section!");
+#ifdef MOVIDIUS_REQUIRED
+  // The SHAVE assembler 'moviAsm' has a maximum line length limitation, so break
+  // the string into smaller units.  This is valid for all targets, so no need
+  // for making it conditional on the target being SHAVE though we probably should
+  size_t dataSize = Data.size ();
+  size_t dataOffset = 0;
+  const size_t dataChunkSize = 256u;
+
+  while ((dataSize - dataOffset) > dataChunkSize) {
+    StringRef dataChunk = Data.substr(dataOffset, dataChunkSize);
+
+    if (MAI->getAscizDirective() && dataChunk.back() == 0) {
+      OS << MAI->getAscizDirective();
+      dataChunk = dataChunk.substr(0, dataChunk.size() - 1);
+    }
+    else
+      OS << MAI->getAsciiDirective();
+
+    OS << ' ';
+    PrintQuotedString(dataChunk, OS);
+    EmitEOL();
+
+    dataOffset += dataChunkSize;
+  }
+
+  // Truncate the original data to the remainder of the string
+  if (dataOffset)
+    Data = Data.substr(dataOffset);
+#endif // MOVIDIUS_REQUIRED
+
   if (Data.empty()) return;
 
   const auto emitAsString = [this](StringRef Data) {
@@ -1451,6 +1501,11 @@ void MCAsmStreamer::emitFill(const MCExpr &NumBytes, uint64_t FillValue,
       // FIXME: Emit location directives
       OS << ZeroDirective;
       NumBytes.print(OS, MAI);
+#ifdef MOVIDIUS_REQUIRED
+    // FIXME: Movidius - need to make this conditional on the SHAVE target
+    OS << ", 1";
+#endif // MOVIDIUS_REQUIRED
+
       if (FillValue != 0)
         OS << ',' << (int)FillValue;
       EmitEOL();
@@ -1500,6 +1555,11 @@ void MCAsmStreamer::emitAlignmentDirective(unsigned ByteAlignment,
     default:
       llvm_unreachable("Invalid size for machine code value!");
     case 1:
+#ifdef MOVIDIUS_PUSHBACK
+      if (MAI->getAlignmentIsInBytes())
+        OS << "\t.align ";
+      else
+#endif // MOVIDIUS_PUSHBACK
       OS << "\t.p2align\t";
       break;
     case 2:
@@ -1512,6 +1572,11 @@ void MCAsmStreamer::emitAlignmentDirective(unsigned ByteAlignment,
       llvm_unreachable("Unsupported alignment size!");
     }
 
+#ifdef MOVIDIUS_PUSHBACK
+    if (MAI->getAlignmentIsInBytes())
+      OS << ByteAlignment;
+    else
+#endif // MOVIDIUS_PUSHBACK
     OS << Log2_32(ByteAlignment);
 
     if (Value.has_value() || MaxBytesToEmit) {
@@ -1549,7 +1614,12 @@ void MCAsmStreamer::emitAlignmentDirective(unsigned ByteAlignment,
   EmitEOL();
 }
 
+#ifndef MOVIDIUS_PUSHBACK
 void MCAsmStreamer::emitValueToAlignment(Align Alignment, int64_t Value,
+#else
+void MCAsmStreamer::emitValueToAlignment(Align Alignment,
+                                         std::optional<int64_t> Value,
+#endif
                                          unsigned ValueSize,
                                          unsigned MaxBytesToEmit) {
   emitAlignmentDirective(Alignment.value(), Value, ValueSize, MaxBytesToEmit);
@@ -1701,6 +1771,13 @@ void MCAsmStreamer::emitDwarfLocDirective(unsigned FileNo, unsigned Line,
                                           unsigned Column, unsigned Flags,
                                           unsigned Isa, unsigned Discriminator,
                                           StringRef FileName) {
+#ifdef MOVIDIUS_FIXME
+  // FIXME: Movidius - this is a workaround for the compiler emitting '.loc x 0 0'
+  // (Bugzilla #22908), but we need to find out why it gets empty DebugLocs.
+  if ((FileNo == 0) || (Line == 0))
+    return;
+#endif // MOVIDIUS_FIXME
+
   // If target doesn't support .loc/.file directive, we need to record the lines
   // same way like we do in object mode.
   if (!MAI->usesDwarfFileAndLocDirectives()) {

@@ -1,0 +1,1626 @@
+// INTEL CONFIDENTIAL
+//
+// Copyright 2025 Intel Corporation.
+//
+// This software and the related documents are Intel copyrighted materials, and
+// your use of them is governed by the express license under which they were
+// provided to you ("License"). Unless the License provides otherwise, you may
+// not use, modify, copy, publish, distribute, disclose or transmit this software
+// or the related documents without Intel's prior written permission.
+//
+// This software and the related documents are provided as is, with no express or
+// implied warranties, other than those that are expressly stated in the License.
+//,,,,,,,,,
+// File: SHAVEIntrinsics.csv,,,,,,,,,
+// Description: This CSV file contains the template from which the SHAVE ISA,,,,,,,,,
+// intrinsics or built-ins are synthesised.,,,,,,,,,
+,,,,,,,,,
+// Intrinsics Table,,,,,,,,,
+//FU,OPcode,Suffix,TDSuffix,RetType,#Args,ArgTypes,OtherInfo,Overload,CPUType
+// ,,,,,,,,,
+// FIELDS:,,,,,,,,,
+//   0. Functional unit the instruction belongs to,,,,,,,,,
+//   1. Name of the instruction,,,,,,,,,
+//   2. Instruction suffix indicating type of instruction,,,,,,,,,
+//   3. Optional additional suffix for TD name,,,,,,,,,
+//   4. The return type of the instruction,,,,,,,,,
+//   5. The number of arguments the instruction takes,,,,,,,,,
+//   6. The types of each argument; seperated by '.',,,,,,,,,
+//   7. Other,,,,,,,,,
+//   8. Overload discriminator - used when the 'Other' column contains 'overload',,,,,,,,,
+//   9. CPU type,,,,,,,,,
+// ,,,,,,,,,
+// Type Syntax:,,,,,,,,,
+//     Prefix: R - Register value,,,,,,,,,
+//               # - Immediate value,,,,,,,,,
+//               P - Pointer Value,,,,,,,,,
+//                   C - 'const' qualified pointer,,,,,,,,,
+//                   V - 'volatile' qualified pointer,,,,,,,,,
+"//     vxx - vector of xx items must be followed by 'ixx', 'uxx' or 'fxx'",,,,,,,,,
+//     ixx - xx bit signed integer value,,,,,,,,,
+//     uxx - xx bit unsigned integer value,,,,,,,,,
+//     fxx - xx bit floating point value,,,,,,,,,
+// ,,,,,,,,,
+// OTHER: used to describe abnormal instruction traits,,,,,,,,,
+//    can be a dot separated list of the following attributes:,,,,,,,,,
+//      set to 'srcdst' without quotes to show that source is same as dest in instruction,,,,,,,,,
+//      set to a constant hex value such as '0xf' for an immediate value added by the compiler,,,,,,,,,
+//      set as 'notype' to show that the instruction is not prepended with type information,,,,,,,,,
+//      set as 'boolimm' for a number of immediates that are represented in the instruction as booleans: instead of i8 i8 i8 i8 => [DEED],,,,,,,,,
+//      set as 'colimm' for an immediate number which specifies a column of a vector: ex. v4i32 i8 => v20.1,,,,,,,,,
+//      set as 'stol' for an intrinsic which stores the lower half of the result,,,,,,,,,
+//      set as 'stoh' for an intrinsic which stores the higher half of the result,,,,,,,,,
+//      set as 'overload' where the intrinsic needs multiple names because it can't be overloaded,,,,,,,,,
+,,,,,,,,,
+// Instruction Unit,Instruction Name,Instruction Suffix,TD Suffix,Return Type,Number of Arguments,Argument Types,Other,Overload,CPU Type
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.3 BRU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.3.10 BRU.SWIH,,,,,,,,
+//,,Signal software interrupt and halt,,,,,,,
+//,,The immediate operand has a value between 0 and 8191,,,,,,,
+BRU,SWIH,,,,1,#u5,notype.noreturn,,
+//,,,,,,,,,
+//,1.6.3.11 BRU.SWIC,,,,,,,,
+//,,Signal software interrupt and continue,,,,,,,
+//,,The immediate operand has a value between 0 and 8191,,,,,,,
+BRU,SWIC,,,,1,#u5,sideeffects.notype.,,
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.4 CMU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.1 CMU.ALIGNVEC,,,,,,,,
+//,,Long vector align with byte offset,,,,,,,
+CMU,ALIGNVEC,,vrf,Rv4f32,3,Rv4f32.Rv4f32.#i2,notype.overload,float4,HasVRF128
+CMU,ALIGNVEC,,vrf,Rv8f16,3,Rv8f16.Rv8f16.#i2,notype.overload,half8,HasVRF128
+CMU,ALIGNVEC,,vrf,Rv4i32,3,Rv4i32.Rv4i32.#i2,notype.overload,int4,HasVRF128
+CMU,ALIGNVEC,,vrf,Rv8i16,3,Rv8i16.Rv8i16.#i2,notype.overload,short8,HasVRF128
+CMU,ALIGNVEC,,vrf,Rv16i8,3,Rv16i8.Rv16i8.#i2,notype.overload,char16,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.2 CMU.CLAMP,,,,,,,,
+//,,Clamp between zero and a positive value or between +/- a specified value,,,,,,,
+CMU,CLAMP,f32,v4f32,Rv4f32,2,Rv4f32.Rv4f32,overload,float4,HasVRF128
+CMU,CLAMP,f16,v8f16,Rv8f16,2,Rv8f16.Rv8f16,overload,half8,HasVRF128
+CMU,CLAMP,i32,v4i32,Rv4i32,2,Rv4i32.Rv4i32,overload,int4,HasVRF128
+CMU,CLAMP,i16,v8i16,Rv8i16,2,Rv8i16.Rv8i16,overload,short8,HasVRF128
+CMU,CLAMP,i8,v16i8,Rv16i8,2,Rv16i8.Rv16i8,overload,char16,HasVRF128
+CMU,CLAMP,f32,,Rf32,2,Rf32.Rf32,overload,float,
+CMU,CLAMP,f16,,Rf16,2,Rf16.Rf16,overload,half,
+CMU,CLAMP,i32,,Ri32,2,Ri32.Ri32,overload,int,
+CMU,CLAMP,i16,,Ri16,2,Ri16.Ri16,overload,short,
+CMU,CLAMP,i8,,Ri8,2,Ri8.Ri8,overload,char,
+//,,,,,,,,,
+CMU,CLAMP0,f32,v4f32,Rv4f32,2,Rv4f32.Rv4f32,overload,float4,HasVRF128
+CMU,CLAMP0,f16,v8f16,Rv8f16,2,Rv8f16.Rv8f16,overload,half8,HasVRF128
+CMU,CLAMP0,i32,v4i32,Rv4i32,2,Rv4i32.Rv4i32,overload,int4,HasVRF128
+CMU,CLAMP0,i16,v8i16,Rv8i16,2,Rv8i16.Rv8i16,overload,short8,HasVRF128
+CMU,CLAMP0,i8,v16i8,Rv16i8,2,Rv16i8.Rv16i8,overload,char16,HasVRF128
+CMU,CLAMP0,f32,,Rf32,2,Rf32.Rf32,overload,float,
+CMU,CLAMP0,f16,,Rf16,2,Rf16.Rf16,overload,half,
+CMU,CLAMP0,i32,,Ri32,2,Ri32.Ri32,overload,int,
+CMU,CLAMP0,i16,,Ri16,2,Ri16.Ri16,overload,short,
+CMU,CLAMP0,i8,,Ri8,2,Ri8.Ri8,overload,char,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.3 CMU.CLAMPAB,,,,,,,,
+//,,Clamp within range,,,,,,,
+CMU,CLAMPAB,f32,v4f32,Rv4f32,3,Rv4f32.Rv4f32.Rv4f32,srcdst.overload,float4,HasVRF128
+CMU,CLAMPAB,f16,v8f16,Rv8f16,3,Rv8f16.Rv8f16.Rv8f16,srcdst.overload,half8,HasVRF128
+CMU,CLAMPAB,i32,v4i32,Rv4i32,3,Rv4i32.Rv4i32.Rv4i32,srcdst.overload,int4,HasVRF128
+CMU,CLAMPAB,u32,v4u32,Rv4u32,3,Rv4u32.Rv4u32.Rv4u32,srcdst.overload,uint4,HasVRF128
+CMU,CLAMPAB,i16,v8i16,Rv8i16,3,Rv8i16.Rv8i16.Rv8i16,srcdst.overload,short8,HasVRF128
+CMU,CLAMPAB,u16,v8u16,Rv8u16,3,Rv8u16.Rv8u16.Rv8u16,srcdst.overload,ushort8,HasVRF128
+CMU,CLAMPAB,i8,v16i8,Rv16i8,3,Rv16i8.Rv16i8.Rv16i8,srcdst.overload,char16,HasVRF128
+CMU,CLAMPAB,u8,v16u8,Rv16u8,3,Rv16u8.Rv16u8.Rv16u8,srcdst.overload,uchar16,HasVRF128
+CMU,CLAMPAB,f32,,Rf32,3,Rf32.Rf32.Rf32,srcdst.overload,float,
+CMU,CLAMPAB,f16,,Rf16,3,Rf16.Rf16.Rf16,srcdst.overload,half,
+CMU,CLAMPAB,i32,,Ri32,3,Ri32.Ri32.Ri32,srcdst.overload,int,
+CMU,CLAMPAB,u32,,Ru32,3,Ru32.Ru32.Ru32,srcdst.overload,uint,
+CMU,CLAMPAB,i16,,Ri16,3,Ri16.Ri16.Ri16,srcdst.overload,short,
+CMU,CLAMPAB,u16,,Ru16,3,Ru16.Ru16.Ru16,srcdst.overload,ushort,
+CMU,CLAMPAB,i8,,Ri8,3,Ri8.Ri8.Ri8,srcdst.overload,char,
+CMU,CLAMPAB,u8,,Ru8,3,Ru8.Ru8.Ru8,srcdst.overload,uchar,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.4 CMU.CMASK,,,,,,,,
+//,,Generate VRF mask from IRF contents,,,,,,,
+CMU,CMASK,,v4i32,Rv4i32,1,Ri32,overload,int4,HasVRF128
+CMU,CMASK,,v8i16,Rv8i16,1,Ri32,overload,short8,HasVRF128
+CMU,CMASK,,v16i8,Rv16i8,1,Ri32,overload,char16,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.9 CMU.CPII,,,,,,,,
+//,,IRF copy with optional conversion.,,,,,,,
+CMU,CPII,u8f_f16,Raw,Rf16,1,Ru8,,,
+CMU,CPII,f16_u8fs,Raw,Ru8,1,Rf16,,,
+CMU,CPII,f16_u8s,Raw,Ru8,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.17 CMU.CPVV,,,,,,,,
+//,,VRF copy with optional conversion.,,,,,,,
+CMU,CPVV,f16_u8fs,Raw,Rv8u8,1,Rv8f16,,,HasVRF128
+CMU,CPVV,u8f_f16,Raw,Rv8f16,1,Rv8u8,,,HasVRF128
+,,,,,,,,,
+CMU,CPVV,u16_u8s,conv,Rv8u8,1,Rv8u16,,,HasVRF128
+CMU,CPVV,f16_u8s,conv,Rv8u8,1,Rv8f16,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.22 CMU.MAX,,,,,,,,
+//,,Maximum,,,,,,,
+CMU,MAX,f32,v4f32,Rv4f32,2,Rv4f32.Rv4f32,overload,float4,HasVRF128
+CMU,MAX,f16,v8f16,Rv8f16,2,Rv8f16.Rv8f16,overload,half8,HasVRF128
+CMU,MAX,i32,v4i32,Rv4i32,2,Rv4i32.Rv4i32,overload,int4,HasVRF128
+CMU,MAX,u32,v4u32,Rv4u32,2,Rv4u32.Rv4u32,overload,uint4,HasVRF128
+CMU,MAX,i16,v8i16,Rv8i16,2,Rv8i16.Rv8i16,overload,short8,HasVRF128
+CMU,MAX,u16,v8u16,Rv8u16,2,Rv8u16.Rv8u16,overload,ushort8,HasVRF128
+CMU,MAX,i8,v16i8,Rv16i8,2,Rv16i8.Rv16i8,overload,char16,HasVRF128
+CMU,MAX,u8,v16u8,Rv16u8,2,Rv16u8.Rv16u8,overload,uchar16,HasVRF128
+CMU,MAX,f32,,Rf32,2,Rf32.Rf32,overload,float,
+CMU,MAX,f16,,Rf16,2,Rf16.Rf16,overload,half,
+CMU,MAX,i32,,Ri32,2,Ri32.Ri32,overload,int,
+CMU,MAX,u32,,Ru32,2,Ru32.Ru32,overload,uint,
+CMU,MAX,i16,,Ri16,2,Ri16.Ri16,overload,short,
+CMU,MAX,u16,,Ru16,2,Ru16.Ru16,overload,ushort,
+CMU,MAX,i8,,Ri8,2,Ri8.Ri8,overload,char,
+CMU,MAX,u8,,Ru8,2,Ru8.Ru8,overload,uchar,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.23 CMU.MIN,,,,,,,,
+//,,Minimum,,,,,,,
+CMU,MIN,f32,v4f32,Rv4f32,2,Rv4f32.Rv4f32,overload,float4,HasVRF128
+CMU,MIN,f16,v8f16,Rv8f16,2,Rv8f16.Rv8f16,overload,half8,HasVRF128
+CMU,MIN,i32,v4i32,Rv4i32,2,Rv4i32.Rv4i32,overload,int4,HasVRF128
+CMU,MIN,u32,v4u32,Rv4u32,2,Rv4u32.Rv4u32,overload,uint4,HasVRF128
+CMU,MIN,i16,v8i16,Rv8i16,2,Rv8i16.Rv8i16,overload,short8,HasVRF128
+CMU,MIN,u16,v8u16,Rv8u16,2,Rv8u16.Rv8u16,overload,ushort8,HasVRF128
+CMU,MIN,i8,v16i8,Rv16i8,2,Rv16i8.Rv16i8,overload,char16,HasVRF128
+CMU,MIN,u8,v16u8,Rv16u8,2,Rv16u8.Rv16u8,overload,uchar16,HasVRF128
+CMU,MIN,f32,,Rf32,2,Rf32.Rf32,overload,float,
+CMU,MIN,f16,,Rf16,2,Rf16.Rf16,overload,half,
+CMU,MIN,i32,,Ri32,2,Ri32.Ri32,overload,int,
+CMU,MIN,u32,,Ru32,2,Ru32.Ru32,overload,uint,
+CMU,MIN,i16,,Ri16,2,Ri16.Ri16,overload,short,
+CMU,MIN,u16,,Ru16,2,Ru16.Ru16,overload,ushort,
+CMU,MIN,i8,,Ri8,2,Ri8.Ri8,overload,char,
+CMU,MIN,u8,,Ru8,2,Ru8.Ru8,overload,uchar,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.24 CMU.SHIV,,,,,,,,
+//,,Shift IRF left or right into VRF,,,,,,,
+CMU,SHLIV,x32,,Rv4i32,2,Rv4i32.Ri32,,,HasVRF128
+CMU,SHLIV,x16,,Rv8i16,2,Rv8i16.Ri16,,,HasVRF128
+CMU,SHLIV,x8,,Rv16i8,2,Rv16i8.Ri8,,,HasVRF128
+,,,,,,,,,
+CMU,SHRIV,x32,,Rv4i32,2,Rv4i32.Ri32,,,HasVRF128
+CMU,SHRIV,x16,,Rv8i16,2,Rv8i16.Ri16,,,HasVRF128
+CMU,SHRIV,x8,,Rv16i8,2,Rv16i8.Ri8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.27 CMU.VNZ,,,,,,,,
+//,,Generate IRF mask from VRF contents,,,,,,,
+CMU,VNZ,x32,,Rv4u8,3,Rv4i32.Rv4u8.#u2,overload,int4,HasVRF128
+CMU,VNZ,x32,,Rv4u8,3,Rv4u32.Rv4u8.#u2,overload,uint4,HasVRF128
+CMU,VNZ,x16,,Rv4u8,3,Rv8i16.Rv4u8.#u2,overload,short8,HasVRF128
+CMU,VNZ,x16,,Rv4u8,3,Rv8u16.Rv4u8.#u2,overload,ushort8,HasVRF128
+CMU,VNZ,x8,,Rv2u16,3,Rv16i8.Rv2u16.#u2,overload,char16,HasVRF128
+CMU,VNZ,x8,,Rv2u16,3,Rv16u8.Rv2u16.#u2,overload,uchar16,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.4.29 CMU.VSZM,,,,,,,,
+//,,Byte/Word swizzle with optional write disable and optional zeroing,,,,,,,
+//,,The 4 immediate operands are enumerates and differ from the ISA document in the following ways:,,,,,,,
+//,,,the value 0 implies 'Z' meaning Zero,,,,,,
+//,,,the value 1 implies 'D' meaning Disable,,,,,,
+//,,,the value 4 implies '0' meaning Select Lane #0,,,,,,
+//,,,the value 5 implies '1' meaning Select Lane #1,,,,,,
+//,,,the value 6 implies '2' meaning Select Lane #2,,,,,,
+//,,,the value 7 implies '3' meaning Select Lane #3,,,,,,
+//,,,element number increases from left to right,,,,,,
+CMU,VSZMWORD,,vrf,Rv4i32,5,Rv4i32.#i3.#i3.#i3.#i3,overload,int4,HasVRF128
+CMU,VSZMWORD,,vrf,Rv4f32,5,Rv4f32.#i3.#i3.#i3.#i3,overload,float4,HasVRF128
+CMU,VSZMWORD,,vrf,Rv8i16,5,Rv8i16.#i3.#i3.#i3.#i3,overload,short8,HasVRF128
+CMU,VSZMWORD,,vrf,Rv16i8,5,Rv16i8.#i3.#i3.#i3.#i3,overload,char16,HasVRF128
+CMU,VSZMBYTE,,vrf,Rv4i32,5,Rv4i32.#i3.#i3.#i3.#i3,overload,int4,HasVRF128
+CMU,VSZMBYTE,,vrf,Rv8i16,5,Rv8i16.#i3.#i3.#i3.#i3,overload,short8,HasVRF128
+CMU,VSZMBYTE,,vrf,Rv16i8,5,Rv16i8.#i3.#i3.#i3.#i3,overload,char16,HasVRF128
+,,,,,,,,,
+CMU,EXPAND,x8,,Rv64i8,2,Rv64i8.Ri64,overload,char64,HasVRF512
+CMU,NDEXPAND,x8,,Rv64i8,2,Rv64i8.Ri64,overload,char64,HasVRF512
+CMU,EXPAND,x16,,Rv32i16,2,Rv32i16.Ri32,overload,short32,HasVRF512
+CMU,NDEXPAND,x16,,Rv32i16,2,Rv32i16.Ri32,overload,short32,HasVRF512
+CMU,EXPAND,x32,,Rv16i32,2,Rv16i32.Ri32,overload,int16,HasVRF512
+CMU,NDEXPAND,x32,,Rv16i32,2,Rv16i32.Ri32,overload,int16,HasVRF512
+CMU,EXPAND,x16,,Rv32f16,2,Rv32f16.Ri32,overload,half32,HasVRF512
+CMU,NDEXPAND,x16,,Rv32f16,2,Rv32f16.Ri32,overload,half32,HasVRF512
+CMU,EXPAND,x32,,Rv16f32,2,Rv16f32.Ri32,overload,float16,HasVRF512
+CMU,NDEXPAND,x32,,Rv16f32,2,Rv16f32.Ri32,overload,float16,HasVRF512
+,,,,,,,,,
+//,CMU.PERM,,,,,,,,
+CMU,PERM,x32,,Rv16i32,2,Rv16i32.Rv16u32,overload,int16,HasPERM
+CMU,PERM,x16,,Rv32i16,2,Rv32i16.Rv32u16,overload,short32,HasPERM
+CMU,PERM,x8,,Rv64i8,2,Rv64i8.Rv64u8,overload,char64,HasPERM
+CMU,PERMB,x32,,Rv16i32,3,Rv16i32.Rv16i32.Rv16u32,overload,int16,HasPERM
+CMU,PERMB,x16,,Rv32i16,3,Rv32i16.Rv32i16.Rv32u16,overload,short32,HasPERM
+CMU,PERMB,x8,,Rv64i8,3,Rv64i8.Rv64i8.Rv64u8,overload,char64,HasPERM
+,,,,,,,,,
+CMU,PERM,x32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasPERM
+CMU,PERM,x16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasPERM
+CMU,PERM,x8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasPERM
+CMU,PERMB,x32,,Rv16u32,3,Rv16u32.Rv16u32.Rv16u32,overload,uint16,HasPERM
+CMU,PERMB,x16,,Rv32u16,3,Rv32u16.Rv32u16.Rv32u16,overload,ushort32,HasPERM
+CMU,PERMB,x8,,Rv64u8,3,Rv64u8.Rv64u8.Rv64u8,overload,uchar64,HasPERM
+,,,,,,,,,
+CMU,PERM,x32,,Rv16f32,2,Rv16f32.Rv16u32,overload,float16,HasPERM
+CMU,PERM,x16,,Rv32f16,2,Rv32f16.Rv32u16,overload,half32,HasPERM
+CMU,PERMB,x32,,Rv16f32,3,Rv16f32.Rv16f32.Rv16u32,overload,float16,HasPERM
+CMU,PERMB,x16,,Rv32f16,3,Rv32f16.Rv32f16.Rv32u16,overload,half32,HasPERM
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.5 IAU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.4 IAU.ADDSI,,,,,,,,
+//,,32-bit signed integer addition with saturation,,,,,,,
+IAU,ADDSI,,,Ri32,2,Ri32.Ri32,,,
+IAU,ADDSI,,,Ri32,2,Ri32.#u8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.5 IAU.ADDSU,,,,,,,,
+//,,32-bit unsigned integer addition with saturation,,,,,,,
+IAU,ADDSU,,,Ru32,2,Ru32.Ru32,,,
+IAU,ADDSU,,,Ru32,2,Ru32.#u8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.6 IAU.ALIGN,,,,,,,,
+//,,Align to byte boundary,,,,,,,
+IAU,ALIGN,,,Ri32,3,Ri32.Ri32.#u8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.7 IAU.AND,,,,,,,,
+//,,Bitwise AND,,,,,,,
+IAU,AND,,32,Ru32,2,Ru32.Ru32,notype,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.9 IAU.BSF,,,,,,,,
+//,,Find bit position of least significant bit set to 1/0,,,,,,,
+IAU,BSF,32,,Ru32,1,Ru32,notype,,
+IAU,BSFINV,32,,Ru32,1,Ru32,notype,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.10 IAU.BSR,,,,,,,,
+//,,Find bit position of most significant bit set to 1/0,,,,,,,
+IAU,BSR,32,,Ru32,1,Ru32,notype,,
+IAU,BSRINV,32,,Ru32,1,Ru32,notype,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.13 IAU.FEXTI,,,,,,,,
+//,,Signed integer field extract with immediate specifiers,,,,,,,
+IAU,FEXTI,,,Ri32,3,Ri32.#u5.#u4,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.14 IAU.FEXTJI,,,,,,,,
+//,,Signed integer field extract with indirect specifiers,,,,,,,
+IAU,FEXTJI,,,Ri32,2,Ri32.Ru32,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.15 IAU.FEXTJU,,,,,,,,
+//,,Unsigned integer field extract with indirect specifiers,,,,,,,
+IAU,FEXTJU,,,Ru32,2,Ru32.Ru32,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.16 IAU.FEXTU,,,,,,,,
+//,,Unsigned integer field extract with immediate specifiers,,,,,,,
+IAU,FEXTU,,,Ru32,3,Ru32.#u5.#u4,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.17 IAU.FINS,,,,,,,,
+//,,Field insert with immediate specifiers,,,,,,,
+IAU,FINS,,,Ru32,4,Ru32.Ru32.#u5.#u4,srcdst,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.18 IAU.FINSJ,,,,,,,,
+//,,Field insert with indirect specifiers,,,,,,,
+IAU,FINSJ,,,Ru32,3,Ru32.Ru32.Ru32,srcdst,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.27 IAU.MULSI,,,,,,,,
+//,,32-bit signed integer multiplication with saturation,,,,,,,
+IAU,MULSI,,,Ri32,2,Ri32.Ri32,,,
+IAU,MULSI,,,Ri32,2,Ri32.#i8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.28 IAU.MULSU,,,,,,,,
+//,,32-bit unsigned integer multiplication with saturation,,,,,,,
+IAU,MULSU,,,Ru32,2,Ru32.Ru32,,,
+IAU,MULSU,,,Ru32,2,Ru32.#u8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.30 IAU.ONES,,,,,,,,
+//,,Count number of bits set to 1/0,,,,,,,
+IAU,ONES,,32,Ri32,1,Ri32,,,
+IAU,ZEROS,,32,Ri32,1,Ri32,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.33 IAU.RVRS,,,,,,,,
+//,,Reverse bit order,,,,,,,
+IAU,RVRS,,,Ri32,1,Ri32,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.38 IAU.SUBSI,,,,,,,,
+//,,32-bit signed integer subtraction with saturation,,,,,,,
+IAU,SUBSI,,,Ri32,2,Ri32.Ri32,,,
+IAU,SUBSI,,,Ri32,2,Ri32.#u8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.5.39 IAU.SUBSU,,,,,,,,
+//,,32-bit unsigned integer subtraction with saturation,,,,,,,
+IAU,SUBSU,,,Ru32,2,Ru32.Ru32,,,
+IAU,SUBSU,,,Ru32,2,Ru32.#u8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.6 LSU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.6.2 LSU.LD,,,,,,,,
+//,,Register indirect load of specified type from memory.,,,,,,,
+LSU,LD128,u8_f16,Raw,Rv8f16,1,PCv8u8,,,HasVRF128
+LSU,LD128,u8f_f16,Raw,Rv8f16,1,PCv8u8,,,HasVRF128
+LSU,LD128,b16_f32,Raw,Rv4f32,1,PCv4f16,,,HasVRF128.HasB16Float
+LSU,LD32,b16_f32,Raw,Rf32,1,PCf16,,,HasB16Float
+LSU,ST64,f32_b16,Raw,,2,Rv4f32.Pv4f16,sideeffects,,HasVRF128.HasB16Float
+LSU,ST16,f32_b16,Raw,,2,Rf32.Pf16,sideeffects,,HasB16Float
+,,,,,,,,,
+//,,,,,,,,,
+//,,"Register load - these are ""exclusive"" loads that do not permit a simultaneous load on the other LSU in the same cycle",,,,,,,
+LSU,LD64,,ex_Raw,Ru64,1,PCVu64,overload,exclusive,HasIRF64_LSU_CMU_Instrs
+LSU,LD32,,ex_Raw,Ru32,1,PCVu32,overload,exclusive,
+LSU,LD16,,ex_Raw,Ru16,1,PCVu16,overload,exclusive,
+LSU,LD8,,ex_Raw,Ru8,1,PCVu8,overload,exclusive,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.6.12 LSU.ST,,,,,,,,
+//,,Register indirect store of specified type to memory.,,,,,,,
+LSU,ST128,f16_u8,Raw,,2,Rv8f16.Pv8u8,,,HasVRF128
+LSU,ST,v8f16_v8u8s,,,2,Rv8f16.Pv8u8,,,HasVRF128
+LSU,ST128,f16_u8f,Raw,,2,Rv8f16.Pv8u8,,,HasVRF128
+,,,,,,,,,
+//,=========================================,,,,,,,,
+//, Sub-byte converting loads and stores
+//,=========================================,,,,,,,,
+LSU,LD32,i4_i8,Raw,Rv4i8,1,PCv4i4,,,
+LSU,LD32,u4_u8,Raw,Rv4u8,1,PCv4u4,,,
+//,,,,,,,,,
+LSU,ST16,i8_i4,Raw,,2,Rv4i8.Pv4i4,sideeffects,,
+LSU,ST16,i8_i4s,Raw,,2,Rv4i8.Pv4i4,sideeffects,,
+LSU,ST16,u8_u4,Raw,,2,Rv4u8.Pv4u4,sideeffects,,
+LSU,ST16,u8_u4s,Raw,,2,Rv4u8.Pv4u4,sideeffects,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.8 SAU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.1 SAU.ABS,,,,,,,,
+//,,Short vector/scalar absolute value,,,,,,,
+SAU,ABS,i32,,Ri32,1,Ri32,,,
+SAU,ABS,i16,,Ri16,1,Ri16,,,
+SAU,ABS,i8,,Ri8,1,Ri8,,,
+//,,,,,,,,,
+SAU,ABS,f32,,Rf32,1,Rf32,,,
+SAU,ABS,f16,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.6 SAU.ADIFF,,,,,,,,
+//,,,,,,,,,
+SAU,ADIFF,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,ADIFF,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,ADIFF,i8,,Ri8,2,Ri8.Ri8,,,
+SAU,ADIFF,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,ADIFF,u16,,Ru16,2,Ru16.Ru16,,,
+SAU,ADIFF,u8,,Ru8,2,Ru8.Ru8,,,
+,,,,,,,,,
+SAU,ADIFF,f32,,Rf32,2,Rf32.Rf32,,,
+SAU,ADIFF,f16,,Rf16,2,Rf16.Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.9 SAU.ANDX,,,,,,,,
+//,,Element-wise AND vector elements,,,,,,,
+SAU,ANDX,x32,,Ri32,1,Rv4i32,,,HasVRF128
+SAU,ANDX,x16,,Ri16,1,Rv8i16,,,HasVRF128
+SAU,ANDX,x8,,Ri8,1,Rv16i8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.10 SAU.ATN,,,,,,,,
+//,,FP16 arctangent,,,,,,,
+SAU,ATN,f16_l,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.13 SAU.COS,,,,,,,,
+//,,FP16 cosine,,,,,,,
+SAU,COS,f16_l,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.14 SAU.DIV,,,,,,,,
+//,,Short vector/scalar division,,,,,,,
+SAU,DIV,f32,,Rf32,2,Rf32.Rf32,,,
+SAU,DIV,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,DIV,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,DIV,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,DIV,u16,,Ru16,2,Ru16.Ru16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.15 SAU.EXP2,,,,,,,,
+//,,FP16 base-2 exponentiation,,,,,,,
+SAU,EXP2,f16_l,,Rf16,1,Rf16,,,
+SAU,EXP2,f16,vrf,Rf16,2,Rv8f16.#u8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//, SAU.TANH,,,,,,,,
+//,,FP16 hyperbolic tangent,,,,,,,
+SAU,TANH,f16_l,,Rf16,1,Rf16,,,
+SAU,TANH,f16,vrf,Rf16,2,Rv8f16.#u8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.16 SAU.FRAC,,,,,,,,
+//,,Fractional part of floating-point number,,,,,,,
+SAU,FRAC,f32,,Rf32,1,Rf32,,,
+SAU,FRAC,f16,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.17 SAU.IADDS,,,,,,,,
+//,,Short vector/scalar integer addition with saturation. Optional unsigned immediate operand,,,,,,,
+SAU,IADDS,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,IADDS,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,IADDS,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,IADDS,u16,,Ru16,2,Ru16.Ru16,,,
+SAU,IADDS,i8,,Ri8,2,Ri8.Ri8,,,
+SAU,IADDS,u8,,Ru8,2,Ru8.Ru8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.18 SAU.ILMULH,,,,,,,,
+//,,Short vector/scalar multiple returning higher-order result,,,,,,,
+SAU,ILMULH,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,ILMULH,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,ILMULH,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,ILMULH,u16,,Ru16,2,Ru16.Ru16,,,
+SAU,ILMULH,i8,,Ri8,2,Ri8.Ri8,,,
+SAU,ILMULH,u8,,Ru8,2,Ru8.Ru8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.19 SAU.IMULS,,,,,,,,
+//,,Short vector/scalar integer multiplication with saturation. Optional immediate operand,,,,,,,
+SAU,IMULS,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,IMULS,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,IMULS,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,IMULS,u16,,Ru16,2,Ru16.Ru16,,,
+SAU,IMULS,i8,,Ri8,2,Ri8.Ri8,,,
+SAU,IMULS,u8,,Ru8,2,Ru8.Ru8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.20 SAU.ISUBS,,,,,,,,
+//,,Short vector/scalar integer subtraction with saturation. Optional unsigned immediate operand,,,,,,,
+SAU,ISUBS,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,ISUBS,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,ISUBS,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,ISUBS,u16,,Ru16,2,Ru16.Ru16,,,
+SAU,ISUBS,i8,,Ri8,2,Ri8.Ri8,,,
+SAU,ISUBS,u8,,Ru8,2,Ru8.Ru8,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.21 SAU.LOG2,,,,,,,,
+//,,FP16 base-2 logarithm,,,,,,,
+SAU,LOG2,f16_l,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.28 SAU.ONESX,,,,,,,,
+//,,Long vector ones or zeroes count reduction,,,,,,,
+SAU,ONESX,x32,,Ru32,1,Rv4i32,,,HasVRF128
+SAU,ONESX,x64,,Ru32,1,Rv8i16,,,HasVRF128
+SAU,ONESX,x128,,Ru32,1,Rv16i8,,,HasVRF128
+//,,,,,,,,,
+SAU,ZEROSX,x32,,Ru32,1,Rv4i32,,,HasVRF128
+SAU,ZEROSX,x64,,Ru32,1,Rv8i16,,,HasVRF128
+SAU,ZEROSX,x128,,Ru32,1,Rv16i8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.30 SAU.ORX,,,,,,,,
+//,,Element-wise OR of vector,,,,,,,
+SAU,ORX,x32,,Ri32,1,Rv4i32,,,HasVRF128
+SAU,ORX,x16,,Ri16,1,Rv8i16,,,HasVRF128
+SAU,ORX,x8,,Ri8,1,Rv16i8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.31 SAU.RCP,,,,,,,,
+//,,FP16 reciprocal,,,,,,,
+SAU,RCP,f16_l,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.32 SAU.ROL,,,,,,,,
+//,,Scalar rotate left with optional immediate rotate amount,,,,,,,
+SAU,ROL,x32,,Ri32,2,Ri32.Ri32,,,
+SAU,ROL,x16,,Ri16,2,Ri16.Ri16,,,
+SAU,ROL,x8,,Ri8,2,Ri8.Ri8,,,
+//,,,,,,,,,
+SAU,ROL,x32,,Ri32,2,Ri32.#u5,,,
+SAU,ROL,x16,,Ri16,2,Ri16.#u5,,,
+SAU,ROL,x8,,Ri8,2,Ri8.#u5,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.33 SAU.RQT,,,,,,,,
+//,,FP16 reciprocal square root,,,,,,,
+SAU,RQT,f16_l,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.35 SAU.SHL,,,,,,,,
+//,,Short vector/scalar logical shift left with optional immediate shift amount,,,,,,,
+SAU,SHL,x32,,Ri32,2,Ri32.Ri32,,,
+SAU,SHL,x16,,Ri16,2,Ri16.Ri16,,,
+SAU,SHL,x8,,Ri8,2,Ri8.Ri8,,,
+SAU,SHL,v2x16,,Rv2i16,2,Rv2i16.Rv2i16,,,
+SAU,SHL,v4x8,,Rv4i8,2,Rv4i8.Rv4i8,,,
+SAU,SHL,v2x16,,Rv2i16,2,Rv2i16.#i5,,,
+SAU,SHL,v4x8,,Rv4i8,2,Rv4i8.#i5,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.36 SAU.SHR,,,,,,,,
+//,,Short vector/scalar logical/arithmetic shift right with optional shift amount,,,,,,,
+SAU,SHR,i32,,Ri32,2,Ri32.Ri32,,,
+SAU,SHR,u32,,Ru32,2,Ru32.Ru32,,,
+SAU,SHR,i16,,Ri16,2,Ri16.Ri16,,,
+SAU,SHR,u16,,Ru16,2,Ru16.Ru16,,,
+SAU,SHR,i8,,Ri8,2,Ri8.Ri8,,,
+SAU,SHR,u8,,Ru8,2,Ru8.Ru8,,,
+SAU,SHR,v2i16,,Rv2i16,2,Rv2i16.Rv2i16,,,
+SAU,SHR,v2u16,,Rv2u16,2,Rv2u16.Rv2u16,,,
+SAU,SHR,v4i8,,Rv4i8,2,Rv4i8.Rv4i8,,,
+SAU,SHR,v4u8,,Rv4u8,2,Rv4u8.Rv4u8,,,
+//,,,,,,,,,
+SAU,SHR,i32,,Ri32,2,Ri32.#u5,,,
+SAU,SHR,u32,,Ru32,2,Ru32.#u5,,,
+SAU,SHR,i16,,Ri16,2,Ri16.#u5,,,
+SAU,SHR,u16,,Ru16,2,Ru16.#u5,,,
+SAU,SHR,i8,,Ri8,2,Ri8.#u5,,,
+SAU,SHR,u8,,Ru8,2,Ru8.#u5,,,
+SAU,SHR,v2i16,,Rv2i16,2,Rv2i16.#u5,,,
+SAU,SHR,v2u16,,Rv2u16,2,Rv2u16.#u5,,,
+SAU,SHR,v4i8,,Rv4i8,2,Rv4i8.#u5,,,
+SAU,SHR,v4u8,,Rv4u8,2,Rv4u8.#u5,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.37 SAU.SIN,,,,,,,,
+//,,FP16 sine,,,,,,,
+SAU,SIN,f16_l,,Rf16,1,Rf16,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.38 SAU.SQT,,,,,,,,
+//,,FP16 square root,,,,,,,
+SAU,SQT,f16_l,,Rf16,1,Rf16,,,
+SAU,SQT,f16,vrf,Rf16,2,Rv8f16.#u8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.42 SAU.SUMX,,,,,,,,
+//,,Sum vector elements to a scalar,,,,,,,
+SAU,SUMX,i32,,Ri32,1,Rv4i32,0xF,,HasVRF128
+SAU,SUMX,i16,,Ri32,1,Rv8i16,0xF,,HasVRF128
+SAU,SUMX,i8,,Ri32,1,Rv16i8,0xF,,HasVRF128
+SAU,SUMX,v4i8,,Ri32,1,Rv4i8,0xF,,HasVRF128
+//,,,,,,,,,
+SAU,SUMX,u32,,Ru32,1,Rv4u32,0xF,,HasVRF128
+SAU,SUMX,u16,,Ru32,1,Rv8u16,0xF,,HasVRF128
+SAU,SUMX,u8,,Ru32,1,Rv16u8,0xF,,HasVRF128
+SAU,SUMX,v4u8,,Ru32,1,Rv4u8,0xF,,HasVRF128
+//,,,,,,,,,
+SAU,SUMX,f32,,Rf32,1,Rv4f32,0xF,,HasVRF128
+SAU,SUMX,f16,,Rf16,1,Rv8f16,0xF,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.8.45 SAU.XORX,,,,,,,,
+//,,Element-wise XOR of vector,,,,,,,
+SAU,XORX,x32,,Ri32,1,Rv4i32,,,HasVRF128
+SAU,XORX,x16,,Ri16,1,Rv8i16,,,HasVRF128
+SAU,XORX,x8,,Ri8,1,Rv16i8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.9 VAU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.1 VAU.ABS,,,,,,,,
+//,,Long vector absolute value,,,,,,,
+VAU,ABS,i32,,Rv4i32,1,Rv4i32,,,HasVRF128
+VAU,ABS,i16,,Rv8i16,1,Rv8i16,,,HasVRF128
+VAU,ABS,i8,,Rv16i8,1,Rv16i8,,,HasVRF128
+VAU,ABS,f32,,Rv4f32,1,Rv4f32,,,HasVRF128
+VAU,ABS,f16,,Rv8f16,1,Rv8f16,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.2 VAU.ACC,,,,,,,,
+//,,Vector add/subtract accumulate with optional zeroing of the accumulator,,,,,,,
+//VAU,ACCN,f32,,Rv4f32,2,Rv4f32.Rv4f32,sideeffects,,
+//VAU,ACCN,f16,,Rv8f16,2,Rv8f16.Rv8f16,sideeffects,,
+//VAU,ACCN,i32,,Rv4i32,2,Rv4i32.Rv4i32,sideeffects,,
+//VAU,ACCN,u32,,Rv4u32,2,Rv4u32.Rv4u32,sideeffects,,
+//VAU,ACCN,i16,,Rv8i16,2,Rv8i16.Rv8i16,sideeffects,,
+//VAU,ACCN,u16,,Rv8u16,2,Rv8u16.Rv8u16,sideeffects,,
+//VAU,ACCN,i8,,Rv16i8,2,Rv16i8.Rv16i8,sideeffects,,
+//VAU,ACCN,u8,,Rv16u8,2,Rv16u8.Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,ACCNZ,f32,,Rv4f32,1,Rv4f32,sideeffects,,
+//VAU,ACCNZ,f16,,Rv8f16,1,Rv8f16,sideeffects,,
+//VAU,ACCNZ,i32,,Rv4i32,1,Rv4i32,sideeffects,,
+//VAU,ACCNZ,u32,,Rv4u32,1,Rv4u32,sideeffects,,
+//VAU,ACCNZ,i16,,Rv8i16,1,Rv8i16,sideeffects,,
+//VAU,ACCNZ,u16,,Rv8u16,1,Rv8u16,sideeffects,,
+//VAU,ACCNZ,i8,,Rv16i8,1,Rv16i8,sideeffects,,
+//VAU,ACCNZ,u8,,Rv16u8,1,Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,ACCP,f32,,Rv4f32,2,Rv4f32.Rv4f32,sideeffects,,
+//VAU,ACCP,f16,,Rv8f16,2,Rv8f16.Rv8f16,sideeffects,,
+//VAU,ACCP,i32,,Rv4i32,2,Rv4i32.Rv4i32,sideeffects,,
+//VAU,ACCP,u32,,Rv4u32,2,Rv4u32.Rv4u32,sideeffects,,
+//VAU,ACCP,i16,,Rv8i16,2,Rv8i16.Rv8i16,sideeffects,,
+//VAU,ACCP,u16,,Rv8u16,2,Rv8u16.Rv8u16,sideeffects,,
+//VAU,ACCP,i8,,Rv16i8,2,Rv16i8.Rv16i8,sideeffects,,
+//VAU,ACCP,u8,,Rv16u8,2,Rv16u8.Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,ACCPZ,f32,,Rv4f32,1,Rv4f32,sideeffects,,
+//VAU,ACCPZ,f16,,Rv8f16,1,Rv8f16,sideeffects,,
+//VAU,ACCPZ,i32,,Rv4i32,1,Rv4i32,sideeffects,,
+//VAU,ACCPZ,u32,,Rv4u32,1,Rv4u32,sideeffects,,
+//VAU,ACCPZ,i16,,Rv8i16,1,Rv8i16,sideeffects,,
+//VAU,ACCPZ,u16,,Rv8u16,1,Rv8u16,sideeffects,,
+//VAU,ACCPZ,i8,,Rv16i8,1,Rv16i8,sideeffects,,
+//VAU,ACCPZ,u8,,Rv16u8,1,Rv16u8,sideeffects,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.3 VAU.ACCW,,,,,,,,
+//,,Vector add/subtract accumulate with write to VRF,,,,,,,
+//VAU,ACCNW,f32,,Rv4f32,2,Rv4f32.Rv4f32,sideeffects,,
+//VAU,ACCNW,f16,,Rv8f16,2,Rv8f16.Rv8f16,sideeffects,,
+//VAU,ACCNW,i32,,Rv4i32,2,Rv4i32.Rv4i32,sideeffects,,
+//VAU,ACCNW,u32,,Rv4u32,2,Rv4u32.Rv4u32,sideeffects,,
+//VAU,ACCNW,i16,,Rv8i16,2,Rv8i16.Rv8i16,sideeffects,,
+//VAU,ACCNW,u16,,Rv8u16,2,Rv8u16.Rv8u16,sideeffects,,
+//VAU,ACCNW,i8,,Rv16i8,2,Rv16i8.Rv16i8,sideeffects,,
+//VAU,ACCNW,u8,,Rv16u8,2,Rv16u8.Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,ACCPW,f32,,Rv4f32,2,Rv4f32.Rv4f32,sideeffects,,
+//VAU,ACCPW,f16,,Rv8f16,2,Rv8f16.Rv8f16,sideeffects,,
+//VAU,ACCPW,i32,,Rv4i32,2,Rv4i32.Rv4i32,sideeffects,,
+//VAU,ACCPW,u32,,Rv4u32,2,Rv4u32.Rv4u32,sideeffects,,
+//VAU,ACCPW,i16,,Rv8i16,2,Rv8i16.Rv8i16,sideeffects,,
+//VAU,ACCPW,u16,,Rv8u16,2,Rv8u16.Rv8u16,sideeffects,,
+//VAU,ACCPW,i8,,Rv16i8,2,Rv16i8.Rv16i8,sideeffects,,
+//VAU,ACCPW,u8,,Rv16u8,2,Rv16u8.Rv16u8,sideeffects,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.4 VAU.ADD,,,,,,,,
+//,,Vector addition with optional immediate operand,,,,,,,
+VAU,ADD,f32,,Rv4f32,2,Rv4f32.Rv4f32,,,HasVRF128
+VAU,ADD,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,ADD,f16,,Rv8f16,2,Rv8f16.Rv8f16,,,HasVRF128
+VAU,ADD,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,ADD,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+//,,,,,,,,,
+VAU,ADD,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,ADD,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,ADD,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.6 VAU.ADIFF,,,,,,,,
+//,,Long vector absolute difference,,,,,,,
+VAU,ADIFF,f32,,Rv4f32,2,Rv4f32.Rv4f32,,,HasVRF128
+VAU,ADIFF,f16,,Rv8f16,2,Rv8f16.Rv8f16,,,HasVRF128
+VAU,ADIFF,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,ADIFF,u32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,ADIFF,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,ADIFF,u16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,ADIFF,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+VAU,ADIFF,u8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.7 VAU.ALIGNBYTE,,,,,,,,
+//,,Long vector align bytes within words,,,,,,,
+VAU,ALIGNBYTE,,vrf,Rv4i32,3,Rv4i32.Rv4i32.#i2,notype.overload,int4,HasVRF128
+VAU,ALIGNBYTE,,vrf,Rv8i16,3,Rv8i16.Rv8i16.#i2,notype.overload,short8,HasVRF128
+VAU,ALIGNBYTE,,vrf,Rv16i8,3,Rv16i8.Rv16i8.#i2,notype.overload,char16,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.8 VAU.AND,,,,,,,,
+//,,Bitwise AND,,,,,,,
+VAU,AND,32,,Rv4i32,2,Rv4i32.Rv4i32,notype,,HasVRF128
+VAU,AND,16,,Rv8i16,2,Rv8i16.Rv8i16,notype,,HasVRF128
+VAU,AND,8,,Rv16i8,2,Rv16i8.Rv16i8,notype,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.9 VAU.AVG,,,,,,,,
+//,,Integer average,,,,,,,
+VAU,AVG,x32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,AVG,x16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,AVG,x8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.10 VAU.CMB,,,,,,,,
+//,,Long vector combine,,,,,,,
+//,,The 4 immediate operands are booleans and differ from the ISA document in the following ways:,,,,,,,
+//,,,the value 0 or 'false' implies 'D',,,,,,
+//,,,the value 1 or 'true' implies 'E',,,,,,
+//,,,element number increases from left to right,,,,,,
+VAU,CMBBYTE,,vrf,Rv4i32,6,Rv4i32.Rv4i32.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,int4,HasVRF128
+VAU,CMBBYTE,,vrf,Rv8i16,6,Rv8i16.Rv8i16.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,short8,HasVRF128
+VAU,CMBBYTE,,vrf,Rv16i8,6,Rv16i8.Rv16i8.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,char16,HasVRF128
+VAU,CMBWORD,,vrf,Rv4f32,6,Rv4f32.Rv4f32.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,float4,HasVRF128
+VAU,CMBWORD,,vrf,Rv4i32,6,Rv4i32.Rv4i32.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,int4,HasVRF128
+VAU,CMBWORD,,vrf,Rv8i16,6,Rv8i16.Rv8i16.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,short8,HasVRF128
+VAU,CMBWORD,,vrf,Rv16i8,6,Rv16i8.Rv16i8.#i1.#i1.#i1.#i1,srcdst.boolimm.notype.overload,char16,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.11 VAU.IADDS,,,,,,,,
+//,,Long vector integer addition with saturation. Optional unsigned immediate operand,,,,,,,
+VAU,IADDS,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,IADDS,u32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,IADDS,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,IADDS,u16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,IADDS,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+VAU,IADDS,u8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+//,,,,,,,,,
+VAU,IADDS,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,IADDS,u32,,Rv4u32,2,Rv4u32.#u5,,,HasVRF128
+VAU,IADDS,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,IADDS,u16,,Rv8u16,2,Rv8u16.#u5,,,HasVRF128
+VAU,IADDS,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+VAU,IADDS,u8,,Rv16u8,2,Rv16u8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.12 VAU.ILMULH,,,,,,,,
+//,,Long vector multiply returning higher-order result,,,,,,,
+VAU,ILMULH,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,ILMULH,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,ILMULH,u16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,ILMULH,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+VAU,ILMULH,u8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.13 VAU.IMULS,,,,,,,,
+//,,Long vector integer multiplication with saturation. Optional immediate operand,,,,,,,
+VAU,IMULS,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,IMULS,u32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,IMULS,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,IMULS,u16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,IMULS,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+VAU,IMULS,u8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+//,,,,,,,,,
+VAU,IMULS,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,IMULS,u32,,Rv4u32,2,Rv4u32.#u5,,,HasVRF128
+VAU,IMULS,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,IMULS,u16,,Rv8u16,2,Rv8u16.#u5,,,HasVRF128
+VAU,IMULS,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+VAU,IMULS,u8,,Rv16u8,2,Rv16u8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.14 VAU.ISUBS,,,,,,,,
+//,,Long vector integer subtraction with saturation. Optional unsigned immediate operand,,,,,,,
+VAU,ISUBS,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,ISUBS,u32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,ISUBS,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,ISUBS,u16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,ISUBS,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+VAU,ISUBS,u8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+//,,,,,,,,,
+VAU,ISUBS,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,ISUBS,u32,,Rv4u32,2,Rv4u32.#u5,,,HasVRF128
+VAU,ISUBS,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,ISUBS,u16,,Rv8u16,2,Rv8u16.#u5,,,HasVRF128
+VAU,ISUBS,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+VAU,ISUBS,u8,,Rv16u8,2,Rv16u8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.15 VAU.MAC,,,,,,,,
+//,,Vector multiply add/subtract accumulate with optional zeroing of the accumulator,,,,,,,
+//VAU,MACN,f32,,Rv4f32,3,Rv4f32.Rv4f32.Rv4f32,sideeffects,,
+//VAU,MACN,f16,,Rv8f16,3,Rv8f16.Rv8f16.Rv8f16,sideeffects,,
+//VAU,MACN,i32,,Rv4i32,3,Rv4i32.Rv4i32.Rv4i32,sideeffects,,
+//VAU,MACN,u32,,Rv4u32,3,Rv4u32.Rv4u32.Rv4u32,sideeffects,,
+//VAU,MACN,i16,,Rv8i16,3,Rv8i16.Rv8i16.Rv8i16,sideeffects,,
+//VAU,MACN,u16,,Rv8u16,3,Rv8u16.Rv8u16.Rv8u16,sideeffects,,
+//VAU,MACN,i8,,Rv16i8,3,Rv16i8.Rv16i8.Rv16i8,sideeffects,,
+//VAU,MACN,u8,,Rv16u8,3,Rv16u8.Rv16u8.Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,MACNZ,f32,,Rv4f32,2,Rv4f32.Rv4f32,sideeffects,,
+//VAU,MACNZ,f16,,Rv8f16,2,Rv8f16.Rv8f16,sideeffects,,
+//VAU,MACNZ,i32,,Rv4i32,2,Rv4i32.Rv4i32,sideeffects,,
+//VAU,MACNZ,u32,,Rv4u32,2,Rv4u32.Rv4u32,sideeffects,,
+//VAU,MACNZ,i16,,Rv8i16,2,Rv8i16.Rv8i16,sideeffects,,
+//VAU,MACNZ,u16,,Rv8u16,2,Rv8u16.Rv8u16,sideeffects,,
+//VAU,MACNZ,i8,,Rv16i8,2,Rv16i8.Rv16i8,sideeffects,,
+//VAU,MACNZ,u8,,Rv16u8,2,Rv16u8.Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,MACP,f32,,Rv4f32,3,Rv4f32.Rv4f32.Rv4f32,sideeffects,,
+//VAU,MACP,f16,,Rv8f16,3,Rv8f16.Rv8f16.Rv8f16,sideeffects,,
+//VAU,MACP,i32,,Rv4i32,3,Rv4i32.Rv4i32.Rv4i32,sideeffects,,
+//VAU,MACP,u32,,Rv4u32,3,Rv4u32.Rv4u32.Rv4u32,sideeffects,,
+//VAU,MACP,i16,,Rv8i16,3,Rv8i16.Rv8i16.Rv8i16,sideeffects,,
+//VAU,MACP,u16,,Rv8u16,3,Rv8u16.Rv8u16.Rv8u16,sideeffects,,
+//VAU,MACP,i8,,Rv16i8,3,Rv16i8.Rv16i8.Rv16i8,sideeffects,,
+//VAU,MACP,u8,,Rv16u8,3,Rv16u8.Rv16u8.Rv16u8,sideeffects,,
+//,,,,,,,,,
+//VAU,MACPZ,f32,,Rv4f32,2,Rv4f32.Rv4f32,sideeffects,,
+//VAU,MACPZ,f16,,Rv8f16,2,Rv8f16.Rv8f16,sideeffects,,
+//VAU,MACPZ,i32,,Rv4i32,2,Rv4i32.Rv4i32,sideeffects,,
+//VAU,MACPZ,u32,,Rv4u32,2,Rv4u32.Rv4u32,sideeffects,,
+//VAU,MACPZ,i16,,Rv8i16,2,Rv8i16.Rv8i16,sideeffects,,
+//VAU,MACPZ,u16,,Rv8u16,2,Rv8u16.Rv8u16,sideeffects,,
+//VAU,MACPZ,i8,,Rv16i8,2,Rv16i8.Rv16i8,sideeffects,,
+//VAU,MACPZ,u8,,Rv16u8,2,Rv16u8.Rv16u8,sideeffects,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.16 MACNW,,,,,,,,
+//,,Vector multiply-subtract accumulate with write to VRF,,,,,,,
+//VAU,MACNW,f32,,Rv4f32,3,Rv4f32.Rv4f32.Rv4f32,sideeffects,,
+//VAU,MACNW,f16,,Rv8f16,3,Rv8f16.Rv8f16.Rv8f16,sideeffects,,
+//VAU,MACNW,i32,,Rv4i32,3,Rv4i32.Rv4i32.Rv4i32,sideeffects,,
+//VAU,MACNW,u32,,Rv4u32,3,Rv4u32.Rv4u32.Rv4u32,sideeffects,,
+//VAU,MACNW,i16,,Rv8i16,3,Rv8i16.Rv8i16.Rv8i16,sideeffects,,
+//VAU,MACNW,u16,,Rv8u16,3,Rv8u16.Rv8u16.Rv8u16,sideeffects,,
+//VAU,MACNW,i8,,Rv16i8,3,Rv16i8.Rv16i8.Rv16i8,sideeffects,,
+//VAU,MACNW,u8,,Rv16u8,3,Rv16u8.Rv16u8.Rv16u8,sideeffects,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.17 MACPW,,,,,,,,
+//,,Vector multiply-add accumulate with write to VRF,,,,,,,
+//VAU,MACPW,f32,,Rv4f32,3,Rv4f32.Rv4f32.Rv4f32,sideeffects,,
+//VAU,MACPW,f16,,Rv8f16,3,Rv8f16.Rv8f16.Rv8f16,sideeffects,,
+//VAU,MACPW,i32,,Rv4i32,3,Rv4i32.Rv4i32.Rv4i32,sideeffects,,
+//VAU,MACPW,u32,,Rv4u32,3,Rv4u32.Rv4u32.Rv4u32,sideeffects,,
+//VAU,MACPW,i16,,Rv8i16,3,Rv8i16.Rv8i16.Rv8i16,sideeffects,,
+//VAU,MACPW,u16,,Rv8u16,3,Rv8u16.Rv8u16.Rv8u16,sideeffects,,
+//VAU,MACPW,i8,,Rv16i8,3,Rv16i8.Rv16i8.Rv16i8,sideeffects,,
+//VAU,MACPW,u8,,Rv16u8,3,Rv16u8.Rv16u8.Rv16u8,sideeffects,,
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.18 VAU.MUL,,,,,,,,
+//,,Long vector multiplication with optional immediate operand,,,,,,,
+VAU,MUL,f32,,Rv4f32,2,Rv4f32.Rv4f32,,,HasVRF128
+VAU,MUL,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,MUL,f16,,Rv8f16,2,Rv8f16.Rv8f16,,,HasVRF128
+VAU,MUL,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,MUL,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+//,,,,,,,,,
+VAU,MUL,i32,,Rv4i32,2,Rv4i32.#i5,,,HasVRF128
+VAU,MUL,i16,,Rv8i16,2,Rv8i16.#i5,,,HasVRF128
+VAU,MUL,i8,,Rv16i8,2,Rv16i8.#i5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.19 VAU.NOT,,,,,,,,
+//,,Bitwise NOT,,,,,,,
+VAU,NOT,i32,,Rv4i32,1,Rv4i32,notype,,HasVRF128
+VAU,NOT,i16,,Rv8i16,1,Rv8i16,notype,,HasVRF128
+VAU,NOT,i8,,Rv16i8,1,Rv16i8,notype,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.20 VAU.OR,,,,,,,,
+//,,Bitwise OR,,,,,,,
+VAU,OR,32,,Rv4i32,2,Rv4i32.Rv4i32,notype,,HasVRF128
+VAU,OR,16,,Rv8i16,2,Rv8i16.Rv8i16,notype,,HasVRF128
+VAU,OR,8,,Rv16i8,2,Rv16i8.Rv16i8,notype,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.21 VAU.ROL,,,,,,,,
+//,,Vector rotate left,,,,,,,
+VAU,ROL,x32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,ROL,x16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,ROL,x8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+//,,,,,,,,,
+VAU,ROL,x32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,ROL,x16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,ROL,x8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.22 VAU.SHD,,,,,,,,
+//,,Long vector arithmetic shift right with set to zero on underflow. Optional immediate shift amount,,,,,,,
+VAU,SHD,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,SHD,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,SHD,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+//,,,,,,,,,
+VAU,SHD,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,SHD,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,SHD,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.23 VAU.SHL,,,,,,,,
+//,,Long vector logical shift left with optional immediate shift amount,,,,,,,
+VAU,SHL,x32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,SHL,x16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,SHL,x8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+//,,,,,,,,,
+VAU,SHL,x32,,Rv4u32,2,Rv4u32.#u5,,,HasVRF128
+VAU,SHL,x16,,Rv8u16,2,Rv8u16.#u5,,,HasVRF128
+VAU,SHL,x8,,Rv16u8,2,Rv16u8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.24 VAU.SHR,,,,,,,,
+//,,Long vector logical/arithmetic shift right with optional immediate shift amount,,,,,,,
+VAU,SHR,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,SHR,u32,,Rv4u32,2,Rv4u32.Rv4u32,,,HasVRF128
+VAU,SHR,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,SHR,u16,,Rv8u16,2,Rv8u16.Rv8u16,,,HasVRF128
+VAU,SHR,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+VAU,SHR,u8,,Rv16u8,2,Rv16u8.Rv16u8,,,HasVRF128
+//,,,,,,,,,
+VAU,SHR,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,SHR,u32,,Rv4u32,2,Rv4u32.#u5,,,HasVRF128
+VAU,SHR,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,SHR,u16,,Rv8u16,2,Rv8u16.#u5,,,HasVRF128
+VAU,SHR,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+VAU,SHR,u8,,Rv16u8,2,Rv16u8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.25 VAU.SUB,,,,,,,,
+//,,Long vector subtraction with optional immediate operand,,,,,,,
+VAU,SUB,f32,,Rv4f32,2,Rv4f32.Rv4f32,,,HasVRF128
+VAU,SUB,i32,,Rv4i32,2,Rv4i32.Rv4i32,,,HasVRF128
+VAU,SUB,f16,,Rv8f16,2,Rv8f16.Rv8f16,,,HasVRF128
+VAU,SUB,i16,,Rv8i16,2,Rv8i16.Rv8i16,,,HasVRF128
+VAU,SUB,i8,,Rv16i8,2,Rv16i8.Rv16i8,,,HasVRF128
+//,,,,,,,,,
+VAU,SUB,i32,,Rv4i32,2,Rv4i32.#u5,,,HasVRF128
+VAU,SUB,i16,,Rv8i16,2,Rv8i16.#u5,,,HasVRF128
+VAU,SUB,i8,,Rv16i8,2,Rv16i8.#u5,,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.27 VAU.XOR,,,,,,,,
+//,,Bitwise XOR,,,,,,,
+VAU,XOR,32,,Rv4i32,2,Rv4i32.Rv4i32,notype,,HasVRF128
+VAU,XOR,16,,Rv8i16,2,Rv8i16.Rv8i16,notype,,HasVRF128
+VAU,XOR,8,,Rv16i8,2,Rv16i8.Rv16i8,notype,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.28 VAU.TANH,,,,,,,,
+//,,FP16 hyperbolic tangent,,,,,,,
+VAU,TANH,v8f16,,Rv8f16,1,Rv8f16,notype,,HasVRF128.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.29 VAU.SIGM,,,,,,,,
+//,,FP16 sigmoid,,,,,,,
+VAU,SIGM,v8f16,,Rv8f16,1,Rv8f16,notype,,HasVRF128.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.30 VAU.LOG,,,,,,,,
+//,,FP16 natural logarithm,,,,,,,
+VAU,LOG,v8f16,,Rv8f16,1,Rv8f16,notype,,HasVRF128.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.31 VAU.EXP,,,,,,,,
+//,,FP16 exponennal function,,,,,,,
+VAU,EXP,v8f16,,Rv8f16,1,Rv8f16,notype,,HasVRF128.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.32 VAU.SQT,,,,,,,,
+//,,FP16 square root,,,,,,,
+VAU,SQT,v8f16,,Rv8f16,1,Rv8f16,notype,,HasVRF128.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,==============================================================================================================,,,,,,,,
+//,,"SHAVE has no native support for 64-bit vectors, but it can generate more efficient code for 64-bit vectors",,,,,,,
+//,,using the native 128-bit instructions when the programmer uses explicit 64-bit vectors.,,,,,,,
+//,,,,,,,,,
+//,,"In some cases 'moviCompile' has internal support for 64-bit vectors, though not all 128-bit vectors have",,,,,,,
+//,,"equivalent 64-bit vector support.  But for those that are supported, the following built-ins provide 64-bit",,,,,,,
+//,,type-safe variants of their 128-bit counterparts above,,,,,,,
+VAU,ABS,v2f32,,Rv2f32,1,Rv2f32,meta,,HasVRF128
+VAU,ABS,v4f16,,Rv4f16,1,Rv4f16,meta,,HasVRF128
+//,,,,,,,,,
+VAU,ADD,v2f32,,Rv2f32,2,Rv2f32.Rv2f32,meta,,HasVRF128
+VAU,ADD,v2i32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,ADD,v4f16,,Rv4f16,2,Rv4f16.Rv4f16,meta,,HasVRF128
+VAU,ADD,v4i16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,ADD,v8i8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,ADD,i32,v2i32,Rv2i32,2,Rv2i32.#u5,overload.meta,int2,HasVRF128
+VAU,ADD,i16,v4i16,Rv4i16,2,Rv4i16.#u5,overload.meta,short4,HasVRF128
+VAU,ADD,i8,v8i8,Rv8i8,2,Rv8i8.#u5,overload.meta,schar8,HasVRF128
+//,,,,,,,,,
+VAU,AND,v2i32,,Rv2u32,2,Rv2u32.Rv2u32,notype.meta,,HasVRF128
+VAU,AND,v4i16,,Rv4u16,2,Rv4u16.Rv4u16,notype.meta,,HasVRF128
+VAU,AND,v8i8,,Rv8u8,2,Rv8u8.Rv8u8,notype.meta,,HasVRF128
+//,,,,,,,,,
+VAU,MUL,v2f32,,Rv2f32,2,Rv2f32.Rv2f32,meta,,HasVRF128
+VAU,MUL,v2i32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,MUL,v4f16,,Rv4f16,2,Rv4f16.Rv4f16,meta,,HasVRF128
+VAU,MUL,v4i16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,MUL,v8i8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,MUL,i32,v2i32,Rv2i32,2,Rv2i32.#u5,overload.meta,int2,HasVRF128
+VAU,MUL,i16,v4i16,Rv4i16,2,Rv4i16.#u5,overload.meta,short4,HasVRF128
+VAU,MUL,i8,v8i8,Rv8i8,2,Rv8i8.#u5,overload.meta,schar8,HasVRF128
+//,,,,,,,,,
+VAU,NOT,v2i32,,Rv2u32,1,Rv2u32,notype.meta,,HasVRF128
+VAU,NOT,v4i16,,Rv4u16,1,Rv4u16,notype.meta,,HasVRF128
+VAU,NOT,v8i8,,Rv8u8,1,Rv8u8,notype.meta,,HasVRF128
+//,,,,,,,,,
+VAU,OR,v2i32,,Rv2u32,2,Rv2u32.Rv2u32,notype.meta,,HasVRF128
+VAU,OR,v4i16,,Rv4u16,2,Rv4u16.Rv4u16,notype.meta,,HasVRF128
+VAU,OR,v8i8,,Rv8u8,2,Rv8u8.Rv8u8,notype.meta,,HasVRF128
+//,,,,,,,,,
+VAU,ROL,v2x32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,ROL,v4x16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,ROL,v8x8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,ROL,x32,v2x32,Rv2i32,2,Rv2i32.#u5,overload.meta,uint2,HasVRF128
+VAU,ROL,x16,v4x16,Rv4i16,2,Rv4i16.#u5,overload.meta,ushort4,HasVRF128
+VAU,ROL,x8,v8x8,Rv8i8,2,Rv8i8.#u5,overload.meta,uchar8,HasVRF128
+//,,,,,,,,,
+VAU,SHD,v2i32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,SHD,v4i16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,SHD,v8i8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,SHD,i32,v2i32,Rv2i32,2,Rv2i32.#u5,overload.meta,int2,HasVRF128
+VAU,SHD,i16,v4i16,Rv4i16,2,Rv4i16.#u5,overload.meta,short4,HasVRF128
+VAU,SHD,i8,v8i8,Rv8i8,2,Rv8i8.#u5,overload.meta,schar8,HasVRF128
+//,,,,,,,,,
+VAU,SHL,v2x32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,SHL,v4x16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,SHL,v8x8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,SHL,x32,v2x32,Rv2i32,2,Rv2i32.#u5,overload.meta,int2,HasVRF128
+VAU,SHL,x16,v4x16,Rv4i16,2,Rv4i16.#u5,overload.meta,short4,HasVRF128
+VAU,SHL,x8,v8x8,Rv8i8,2,Rv8i8.#u5,overload.meta,schar8,HasVRF128
+//,,,,,,,,,
+VAU,SHR,v2i32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,SHR,v2u32,,Rv2u32,2,Rv2u32.Rv2u32,meta,,HasVRF128
+VAU,SHR,v4i16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,SHR,v4u16,,Rv4u16,2,Rv4u16.Rv4u16,meta,,HasVRF128
+VAU,SHR,v8i8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+VAU,SHR,v8u8,,Rv8u8,2,Rv8u8.Rv8u8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,SHR,i32,v2i32,Rv2i32,2,Rv2i32.#u5,overload.meta,int2,HasVRF128
+VAU,SHR,u32,v2u32,Rv2u32,2,Rv2u32.#u5,overload.meta,int2,HasVRF128
+VAU,SHR,i16,v4i16,Rv4i16,2,Rv4i16.#u5,overload.meta,short4,HasVRF128
+VAU,SHR,u16,v4u16,Rv4u16,2,Rv4u16.#u5,overload.meta,short4,HasVRF128
+VAU,SHR,i8,v8i8,Rv8i8,2,Rv8i8.#u5,overload.meta,schar8,HasVRF128
+VAU,SHR,u8,v8u8,Rv8u8,2,Rv8u8.#u5,overload.meta,schar8,HasVRF128
+//,,,,,,,,,
+VAU,SUB,v2f32,,Rv2f32,2,Rv2f32.Rv2f32,meta,,HasVRF128
+VAU,SUB,v2i32,,Rv2i32,2,Rv2i32.Rv2i32,meta,,HasVRF128
+VAU,SUB,v4f16,,Rv4f16,2,Rv4f16.Rv4f16,meta,,HasVRF128
+VAU,SUB,v4i16,,Rv4i16,2,Rv4i16.Rv4i16,meta,,HasVRF128
+VAU,SUB,v8i8,,Rv8i8,2,Rv8i8.Rv8i8,meta,,HasVRF128
+//,,,,,,,,,
+VAU,SUB,i32,v2i32,Rv2i32,2,Rv2i32.#u5,overload.meta,int2,HasVRF128
+VAU,SUB,i16,v4i16,Rv4i16,2,Rv4i16.#u5,overload.meta,short4,HasVRF128
+VAU,SUB,i8,v8i8,Rv8i8,2,Rv8i8.#u5,overload.meta,schar8,HasVRF128
+//,,,,,,,,,
+VAU,XOR,v2i32,,Rv2u32,2,Rv2u32.Rv2u32,notype.meta,,HasVRF128
+VAU,XOR,v4i16,,Rv4u16,2,Rv4u16.Rv4u16,notype.meta,,HasVRF128
+VAU,XOR,v8i8,,Rv8u8,2,Rv8u8.Rv8u8,notype.meta,,HasVRF128
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,==============================================================================================================,,,,,,,,
+//,,,,,,,,
+//,,Builtins available on SHAVE512 only,,,,,,,
+//,,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,CMU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,CMU.ALIGNVEC,,,,,,,,
+//,,,,,,,,,
+CMU,ALIGNVEC,,,Rv16f32,3,Rv16f32.Rv16f32.#i6,notype.overload,float16,HasVRF512
+CMU,ALIGNVEC,,,Rv32f16,3,Rv32f16.Rv32f16.#i6,notype.overload,half32,HasVRF512
+CMU,ALIGNVEC,,,Rv16i32,3,Rv16i32.Rv16i32.#i6,notype.overload,int16,HasVRF512
+CMU,ALIGNVEC,,,Rv32i16,3,Rv32i16.Rv32i16.#i6,notype.overload,short32,HasVRF512
+CMU,ALIGNVEC,,,Rv64i8,3,Rv64i8.Rv64i8.#i6,notype.overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,CMU.CLAMP,,,,,,,,
+//,,,,,,,,,
+CMU,CLAMP,f32,v16f32,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+CMU,CLAMP,f16,v32f16,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+CMU,CLAMP,i32,v16i32,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+CMU,CLAMP,i16,v32i16,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+CMU,CLAMP,i8,v64i8,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+CMU,CLAMP0,f32,v16f32,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+CMU,CLAMP0,f16,v32f16,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+CMU,CLAMP0,i32,v16i32,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+CMU,CLAMP0,i16,v32i16,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+CMU,CLAMP0,i8,v64i8,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,CMU.CLAMPAB,,,,,,,,
+//,,,,,,,,,
+CMU,CLAMPAB,f32,v16f32,Rv16f32,3,Rv16f32.Rv16f32.Rv16f32,srcdst.overload,float16,HasVRF512
+CMU,CLAMPAB,f16,v32f16,Rv32f16,3,Rv32f16.Rv32f16.Rv32f16,srcdst.overload,half32,HasVRF512
+CMU,CLAMPAB,i32,v16i32,Rv16i32,3,Rv16i32.Rv16i32.Rv16i32,srcdst.overload,int16,HasVRF512
+CMU,CLAMPAB,u32,v16u32,Rv16u32,3,Rv16u32.Rv16u32.Rv16u32,srcdst.overload,uint16,HasVRF512
+CMU,CLAMPAB,i16,v32i16,Rv32i16,3,Rv32i16.Rv32i16.Rv32i16,srcdst.overload,short32,HasVRF512
+CMU,CLAMPAB,u16,v32u16,Rv32u16,3,Rv32u16.Rv32u16.Rv32u16,srcdst.overload,ushort32,HasVRF512
+CMU,CLAMPAB,i8,v64i8,Rv64i8,3,Rv64i8.Rv64i8.Rv64i8,srcdst.overload,char64,HasVRF512
+CMU,CLAMPAB,u8,v64u8,Rv64u8,3,Rv64u8.Rv64u8.Rv64u8,srcdst.overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,CMU.MAX,,,,,,,,
+//,,,,,,,,,
+CMU,MAX,f32,v16f32,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+CMU,MAX,f16,v32f16,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+CMU,MAX,i32,v16i32,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+CMU,MAX,u32,v16u32,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+CMU,MAX,i16,v32i16,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+CMU,MAX,u16,v32u16,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+CMU,MAX,i8,v64i8,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+CMU,MAX,u8,v64u8,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,CMU.MIN,,,,,,,,
+//,,,,,,,,,
+CMU,MIN,f32,v16f32,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+CMU,MIN,f16,v32f16,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+CMU,MIN,i32,v16i32,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+CMU,MIN,u32,v16u32,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+CMU,MIN,i16,v32i16,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+CMU,MIN,u16,v32u16,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+CMU,MIN,i8,v64i8,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+CMU,MIN,u8,v64u8,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,CMU.SHIV,,,,,,,,
+//,,,,,,,,,
+CMU,SHLIV,x32,,Rv16i32,2,Rv16i32.Ri32,overload,int16,HasVRF512
+CMU,SHLIV,x16,,Rv32i16,2,Rv32i16.Ri16,overload,short32,HasVRF512
+CMU,SHLIV,x8,,Rv64i8,2,Rv64i8.Ri8,overload,char64,HasVRF512
+,,,,,,,,,
+CMU,SHRIV,x32,,Rv16i32,2,Rv16i32.Ri32,overload,int16,HasVRF512
+CMU,SHRIV,x16,,Rv32i16,2,Rv32i16.Ri16,overload,short32,HasVRF512
+CMU,SHRIV,x8,,Rv64i8,2,Rv64i8.Ri8,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,1.6.8 SAU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.ANDX,,,,,,,,
+//,,,,,,,,,
+SAU,ANDX,x32,,Ri32,1,Rv16i32,overload,int16,HasVRF512
+SAU,ANDX,x16,,Ri16,1,Rv32i16,overload,short32,HasVRF512
+SAU,ANDX,x8,,Ri8,1,Rv64i8,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.ONESX,,,,,,,,
+//,,,,,,,,,
+SAU,ONESX,x128,,Ru32,2,Rv64i8.#u8,,,HasVRF512
+SAU,ONESX,x64,,Ru32,2,Rv32i16.#u8,,,HasVRF512
+SAU,ONESX,x32,,Ru32,2,Rv16i32.#u8,,,HasVRF512
+,,,,,,,,,
+SAU,ZEROSX,x128,,Ru32,2,Rv64i8.#u8,,,HasVRF512
+SAU,ZEROSX,x64,,Ru32,2,Rv32i16.#u8,,,HasVRF512
+SAU,ZEROSX,x32,,Ru32,2,Rv16i32.#u8,,,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.ORX,,,,,,,,
+//,,,,,,,,,
+SAU,ORX,x32,,Ri32,1,Rv16i32,overload,int16,HasVRF512
+SAU,ORX,x16,,Ri16,1,Rv32i16,overload,short32,HasVRF512
+SAU,ORX,x8,,Ri8,1,Rv64i8,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.SUMX,,,,,,,,
+//,,,,,,,,,
+SAU,SUMX,i32,,Ri32,1,Rv16i32,overload,int16,HasVRF512
+SAU,SUMX,i16,,Ri32,1,Rv32i16,overload,short32,HasVRF512
+SAU,SUMX,i8,,Ri32,1,Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+SAU,SUMX,u32,,Ru32,1,Rv16u32,overload,uint16,HasVRF512
+SAU,SUMX,u16,,Ru32,1,Rv32u16,overload,ushort32,HasVRF512
+SAU,SUMX,u8,,Ru32,1,Rv64u8,overload,uchar64,HasVRF512
+//,,,,,,,,,
+SAU,SUMFX,f32,,Rf32,2,Rv16f32.#u2,overload,float16,HasVRF512
+SAU,SUMFX,f16,,Rf16,2,Rv32f16.#u2,overload,half32,HasVRF512
+//,NPU6 full vector version,,,,,,,,
+SAU,SUMFX,f16_f32,,Rf32,1,Rv32f16,,,HasSUMFX512
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.XORX,,,,,,,,
+//,,,,,,,,,
+SAU,XORX,x32,,Ri32,1,Rv16i32,overload,int16,HasVRF512
+SAU,XORX,x16,,Ri16,1,Rv32i16,overload,short32,HasVRF512
+SAU,XORX,x8,,Ri8,1,Rv64i8,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.LOG,,,,,,,,
+//,,,,,,,,,
+//,VPU2.6 and later,,,,,,,,
+SAU,LOG,f16,,Rf16,1,Rf16,,,HasTranscendentals
+SAU,LOG,f16_l,,Rf16,1,Rf16,,,HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.EXP,,,,,,,,
+//,,,,,,,,,
+//,VPU2.6 and later,,,,,,,,
+SAU,EXP,f16,,Rf16,1,Rf16,,,HasTranscendentals
+SAU,EXP,f16_l,,Rf16,1,Rf16,,,HasTranscendentals
+//,,,,,,,,,
+//,SAU.LOGV SQTV,,,,,,,,
+//,,,,,,,,,
+SAU,LOGV,,,Rf16,2,Rv32f16.#u5,,,HasVRF512
+SAU,SIGMV,,,Rf16,2,Rv32f16.#u5,,,HasVRF512
+SAU,TANHV,,,Rf16,2,Rv32f16.#u5,,,HasVRF512
+SAU,EXPV,,,Rf16,2,Rv32f16.#u5,,,HasVRF512
+SAU,EXP2V,,,Rf16,2,Rv32f16.#u5,,,HasVRF512
+SAU,SQTV,,,Rf16,2,Rv32f16.#u5,,,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,SAU.DP4,,,,,,,,
+//,,,,,,,,,
+//,VPU2.6,,,,,,,,
+SAU,DP4,v4i8,,Ri32,2,Rv4i8.Rv4i8,notype,,HasDP4
+SAU,DP4A,v4i8_sacc0,,Ri32,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4A,v4i8_sacc1,,Ri32,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4AZ,v4i8_sacc0,,Ri32,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4AZ,v4i8_sacc1,,Ri32,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4A,v4i8_sacc0_void,,,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4AZ,v4i8_sacc0_void,,,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4A,v4i8_sacc1_void,,,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+SAU,DP4AZ,v4i8_sacc1_void,,,2,Rv4i8.Rv4i8,sideeffects,,HasDP4
+//,,,,,,,,,
+SAU,DP4M,v4i8,,Ri32,2,Rv4i8.Rv4u8,notype,,HasDP4
+SAU,DP4AM,v4i8_sacc0,,Ri32,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AM,v4i8_sacc1,,Ri32,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AMZ,v4i8_sacc0,,Ri32,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AMZ,v4i8_sacc1,,Ri32,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AM,v4i8_sacc0_void,,,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AMZ,v4i8_sacc0_void,,,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AM,v4i8_sacc1_void,,,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+SAU,DP4AMZ,v4i8_sacc1_void,,,2,Rv4i8.Rv4u8,sideeffects,,HasDP4
+//,,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,VAU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.DP4,,,,,,,,
+//,VPU2.6,,,,,,,,
+//,,,,,,,,,
+VAU,DP4,v16i8,,Rv4i32,2,Rv16i8.Rv16i8,notype,,HasVRF128.HasDP4
+VAU,DP4A,v16i8_vacc0,,Rv4i32,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AZ,v16i8_vacc0,,Rv4i32,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4A,v16i8_vacc1,,Rv4i32,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AZ,v16i8_vacc1,,Rv4i32,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4A,v16i8_vacc0_void,,,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AZ,v16i8_vacc0_void,,,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4A,v16i8_vacc1_void,,,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AZ,v16i8_vacc1_void,,,2,Rv16i8.Rv16i8,sideeffects,,HasVRF128.HasDP4
+//,,,,,,,,,
+VAU,DP4M,v16i8,,Rv4i32,2,Rv16i8.Rv16u8,notype,,HasVRF128.HasDP4
+VAU,DP4AM,v16i8_vacc0,,Rv4i32,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AMZ,v16i8_vacc0,,Rv4i32,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AM,v16i8_vacc1,,Rv4i32,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AMZ,v16i8_vacc1,,Rv4i32,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AM,v16i8_vacc0_void,,,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AMZ,v16i8_vacc0_void,,,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AM,v16i8_vacc1_void,,,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+VAU,DP4AMZ,v16i8_vacc1_void,,,2,Rv16i8.Rv16u8,sideeffects,,HasVRF128.HasDP4
+//,,,,,,,,,
+//,VPU4,,,,,,,,
+//,,,,,,,,,
+//,=========================================,,,,,,,,
+//,LSU Instructions,,,,,,,,
+//,=========================================,,,,,,,,
+LSU,LD512,b16_f32,Raw,Rv16f32,1,PCv16f16,,,HasVRF512.HasB16Float
+LSU,ST256,f32_b16,Raw,,2,Rv16f32.Pv16f16,sideeffects,,HasVRF512.HasB16Float
+//,=========================================,,,,,,,,
+//, Small floats
+//,=========================================,,,,,,,,
+LSU,LD32,b8_f16,Raw,Rv2f16,1,PCv2f8,,,HasVRF512.HasF8Float
+LSU,LD32,h8_f16,Raw,Rv2f16,1,PCv2f8,,,HasVRF512.HasF8Float
+LSU,LD512,b8_f16,Raw,Rv32f16,1,PCv32f8,,,HasVRF512.HasF8Float
+LSU,LD512,h8_f16,Raw,Rv32f16,1,PCv32f8,,,HasVRF512.HasF8Float
+//,,,,,,,,,
+LSU,ST16,f32_f16c,Raw,,2,Rf32.Pf16,sideeffects,,HasVRF512.HasF8Float
+LSU,ST256,f32_f16c,Raw,,2,Rv16f32.Pv16f16,sideeffects,,HasVRF512.HasF8Float
+LSU,ST16,f16_b8,Raw,,2,Rv2f16.Pv2f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST16,f16_b8c,Raw,,2,Rv2f16.Pv2f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST16,f16_h8,Raw,,2,Rv2f16.Pv2f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST16,f16_h8c,Raw,,2,Rv2f16.Pv2f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST256,f16_b8,Raw,,2,Rv32f16.Pv32f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST256,f16_b8c,Raw,,2,Rv32f16.Pv32f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST256,f16_h8,Raw,,2,Rv32f16.Pv32f8,sideeffects,,HasVRF512.HasF8Float
+LSU,ST256,f16_h8c,Raw,,2,Rv32f16.Pv32f8,sideeffects,,HasVRF512.HasF8Float
+//,=========================================,,,,,,,,
+//, Sub-byte converting loads and stores
+//,=========================================,,,,,,,,
+LSU,LD512,i4_i8,Raw,Rv64i8,1,PCv64i4,,,HasVRF512
+LSU,LD512,u4_u8,Raw,Rv64u8,1,PCv64u4,,,HasVRF512
+//,,,,,,,,,
+LSU,ST256,i8_i4,Raw,,2,Rv64i8.Pv64i4,sideeffects,,HasVRF512
+LSU,ST256,i8_i4s,Raw,,2,Rv64i8.Pv64i4,sideeffects,,HasVRF512
+LSU,ST256,u8_u4,Raw,,2,Rv64u8.Pv64u4,sideffects,,HasVRF512
+LSU,ST256,u8_u4s,Raw,,2,Rv64u8.Pv64u4,sideffects,,HasVRF512
+//,,,,,,,,,
+//,VAU.ABS,,,,,,,,
+//,,,,,,,,,
+VAU,ABS,i32,,Rv16i32,1,Rv16i32,overload,int16,HasVRF512
+VAU,ABS,i16,,Rv32i16,1,Rv32i16,overload,short32,HasVRF512
+VAU,ABS,i8,,Rv64i8,1,Rv64i8,overload,char64,HasVRF512
+VAU,ABS,f32,,Rv16f32,1,Rv16f32,overload,float16,HasVRF512
+VAU,ABS,f16,,Rv32f16,1,Rv32f16,overload,half32,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.ADD,,,,,,,,
+//,,,,,,,,,
+VAU,ADD,f32,,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+VAU,ADD,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,ADD,f16,,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+VAU,ADD,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,ADD,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+VAU,ADD,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,ADD,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,ADD,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.ADIFF,,,,,,,,
+//,,,,,,,,,
+VAU,ADIFF,f32,,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+VAU,ADIFF,f16,,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+VAU,ADIFF,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,ADIFF,u32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,ADIFF,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,ADIFF,u16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,ADIFF,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+VAU,ADIFF,u8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.ALIGNBYTE,,,,,,,,
+//,,,,,,,,,
+VAU,ALIGNBYTE,,vrf,Rv16i32,3,Rv16i32.Rv16i32.#i2,notype.overload,int16,HasVRF512
+VAU,ALIGNBYTE,,vrf,Rv32i16,3,Rv32i16.Rv32i16.#i2,notype.overload,short32,HasVRF512
+VAU,ALIGNBYTE,,vrf,Rv64i8,3,Rv64i8.Rv64i8.#i2,notype.overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.AND,,,,,,,,
+//,,,,,,,,,
+VAU,AND,32,,Rv16i32,2,Rv16i32.Rv16i32,notype.overload,int16,HasVRF512
+VAU,AND,16,,Rv32i16,2,Rv32i16.Rv32i16,notype.overload,short32,HasVRF512
+VAU,AND,8,,Rv64i8,2,Rv64i8.Rv64i8,notype.overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.AVG,,,,,,,,
+//,,,,,,,,,
+VAU,AVG,x32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,AVG,x16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,AVG,x8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.IADDS,,,,,,,,
+//,,,,,,,,,
+VAU,IADDS,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,IADDS,u32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,IADDS,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,IADDS,u16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,IADDS,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+VAU,IADDS,u8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+//,,,,,,,,,
+VAU,IADDS,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,IADDS,u32,,Rv16u32,2,Rv16u32.#u5,overload,uint16,HasVRF512
+VAU,IADDS,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,IADDS,u16,,Rv32u16,2,Rv32u16.#u5,overload,ushort32,HasVRF512
+VAU,IADDS,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+VAU,IADDS,u8,,Rv64u8,2,Rv64u8.#u5,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.ILMULH,,,,,,,,
+//,,,,,,,,,
+VAU,ILMULH,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,ILMULH,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,ILMULH,u16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,ILMULH,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+VAU,ILMULH,u8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.IMULS,,,,,,,,
+//,,,,,,,,,
+VAU,IMULS,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,IMULS,u32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,IMULS,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,IMULS,u16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,IMULS,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+VAU,IMULS,u8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+//,,,,,,,,,
+VAU,IMULS,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,IMULS,u32,,Rv16u32,2,Rv16u32.#u5,overload,uint16,HasVRF512
+VAU,IMULS,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,IMULS,u16,,Rv32u16,2,Rv32u16.#u5,overload,ushort32,HasVRF512
+VAU,IMULS,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+VAU,IMULS,u8,,Rv64u8,2,Rv64u8.#u5,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.ISUBS,,,,,,,,
+//,,,,,,,,,
+VAU,ISUBS,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,ISUBS,u32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,ISUBS,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,ISUBS,u16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,ISUBS,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+VAU,ISUBS,u8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+//,,,,,,,,,
+VAU,ISUBS,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,ISUBS,u32,,Rv16u32,2,Rv16u32.#u5,overload,uint16,HasVRF512
+VAU,ISUBS,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,ISUBS,u16,,Rv32u16,2,Rv32u16.#u5,overload,ushort32,HasVRF512
+VAU,ISUBS,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+VAU,ISUBS,u8,,Rv64u8,2,Rv64u8.#u5,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.MUL,,,,,,,,
+//,,,,,,,,,
+VAU,MUL,f32,,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+VAU,MUL,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,MUL,f16,,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+VAU,MUL,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,MUL,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+VAU,MUL,i32,,Rv16i32,2,Rv16i32.#i5,overload,int16,HasVRF512
+VAU,MUL,i16,,Rv32i16,2,Rv32i16.#i5,overload,short32,HasVRF512
+VAU,MUL,i8,,Rv64i8,2,Rv64i8.#i5,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.NOT,,,,,,,,
+//,,,,,,,,,
+VAU,NOT,i32,,Rv16i32,1,Rv16i32,notype.overload,int16,HasVRF512
+VAU,NOT,i16,,Rv32i16,1,Rv32i16,notype.overload,short32,HasVRF512
+VAU,NOT,i8,,Rv64i8,1,Rv64i8,notype.overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.OR,,,,,,,,
+//,,,,,,,,,
+VAU,OR,32,,Rv16i32,2,Rv16i32.Rv16i32,notype.overload,int16,HasVRF512
+VAU,OR,16,,Rv32i16,2,Rv32i16.Rv32i16,notype.overload,short32,HasVRF512
+VAU,OR,8,,Rv64i8,2,Rv64i8.Rv64i8,notype.overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.ROL,,,,,,,,
+//,,,,,,,,,
+VAU,ROL,x32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,ROL,x16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,ROL,x8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+VAU,ROL,x32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,ROL,x16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,ROL,x8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.SHD,,,,,,,,
+//,,,,,,,,,
+VAU,SHD,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,SHD,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,SHD,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+VAU,SHD,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,SHD,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,SHD,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.SHL,,,,,,,,
+//,,,,,,,,,
+VAU,SHL,x32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,SHL,x16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort32,HasVRF512
+VAU,SHL,x8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+//,,,,,,,,,
+VAU,SHL,x32,,Rv16u32,2,Rv16u32.#u5,overload,uint16,HasVRF512
+VAU,SHL,x16,,Rv32u16,2,Rv32u16.#u5,overload,ushort32,HasVRF512
+VAU,SHL,x8,,Rv64u8,2,Rv64u8.#u5,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.SHR,,,,,,,,
+//,,,,,,,,,
+VAU,SHR,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,SHR,u32,,Rv16u32,2,Rv16u32.Rv16u32,overload,uint16,HasVRF512
+VAU,SHR,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short16,HasVRF512
+VAU,SHR,u16,,Rv32u16,2,Rv32u16.Rv32u16,overload,ushort16,HasVRF512
+VAU,SHR,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+VAU,SHR,u8,,Rv64u8,2,Rv64u8.Rv64u8,overload,uchar64,HasVRF512
+//,,,,,,,,,
+VAU,SHR,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,SHR,u32,,Rv16u32,2,Rv16u32.#u5,overload,uint16,HasVRF512
+VAU,SHR,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,SHR,u16,,Rv32u16,2,Rv32u16.#u5,overload,ushort32,HasVRF512
+VAU,SHR,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+VAU,SHR,u8,,Rv64u8,2,Rv64u8.#u5,overload,uchar64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.SUB,,,,,,,,
+//,,,,,,,,,
+VAU,SUB,f32,,Rv16f32,2,Rv16f32.Rv16f32,overload,float16,HasVRF512
+VAU,SUB,i32,,Rv16i32,2,Rv16i32.Rv16i32,overload,int16,HasVRF512
+VAU,SUB,f16,,Rv32f16,2,Rv32f16.Rv32f16,overload,half32,HasVRF512
+VAU,SUB,i16,,Rv32i16,2,Rv32i16.Rv32i16,overload,short32,HasVRF512
+VAU,SUB,i8,,Rv64i8,2,Rv64i8.Rv64i8,overload,char64,HasVRF512
+//,,,,,,,,,
+VAU,SUB,i32,,Rv16i32,2,Rv16i32.#u5,overload,int16,HasVRF512
+VAU,SUB,i16,,Rv32i16,2,Rv32i16.#u5,overload,short32,HasVRF512
+VAU,SUB,i8,,Rv64i8,2,Rv64i8.#u5,overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.XOR,,,,,,,,
+//,,,,,,,,,
+VAU,XOR,32,,Rv16i32,2,Rv16i32.Rv16i32,notype.overload,int16,HasVRF512
+VAU,XOR,16,,Rv32i16,2,Rv32i16.Rv32i16,notype.overload,short32,HasVRF512
+VAU,XOR,8,,Rv64i8,2,Rv64i8.Rv64i8,notype.overload,char64,HasVRF512
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.28 VAU.TANH,,,,,,,,
+//,,FP16 hyperbolic tangent,,,,,,,
+VAU,TANH,,,Rv32f16,1,Rv32f16,overload,half32,HasVRF512.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.29 VAU.SIGM,,,,,,,,
+//,,FP16 sigmoid,,,,,,,
+VAU,SIGM,,,Rv32f16,1,Rv32f16,overload,half32,HasVRF512.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.30 VAU.LOG,,,,,,,,
+//,,FP16 natural logarithm,,,,,,,
+VAU,LOG,,,Rv32f16,1,Rv32f16,overload,half32,HasVRF512.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,1.6.9.31 VAU.EXP,,,,,,,,
+//,,FP16 exponennal function,,,,,,,
+VAU,EXP,,,Rv32f16,1,Rv32f16,overload,half32,HasVRF512.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.SQT,,,,,,,,
+//,,,,,,,,,
+VAU,SQT,,,Rv32f16,1,Rv32f16,overload,half32,HasVRF512.HasTranscendentals
+,,,,,,,,,
+//,,,,,,,,,
+//,VAU.DP4,,,,,,,,
+//,,,,,,,,,
+VAU,DP4,v64i8,,Rv16i32,2,Rv64i8.Rv64i8,notype,,HasVRF512.HasDP4
+VAU,DP4A,v64i8_vacc0,,Rv16i32,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AZ,v64i8_vacc0,,Rv16i32,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4A,v64i8_vacc1,,Rv16i32,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AZ,v64i8_vacc1,,Rv16i32,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4A,v64i8_vacc0_void,,,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AZ,v64i8_vacc0_void,,,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4A,v64i8_vacc1_void,,,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AZ,v64i8_vacc1_void,,,2,Rv64i8.Rv64i8,sideeffects,,HasVRF512.HasDP4
+//,,,,,,,,,
+VAU,DP4M,v64i8,,Rv16i32,2,Rv64i8.Rv64u8,notype,,HasVRF512.HasDP4
+VAU,DP4AM,v64i8_vacc0,,Rv16i32,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AMZ,v64i8_vacc0,,Rv16i32,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AM,v64i8_vacc1,,Rv16i32,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AMZ,v64i8_vacc1,,Rv16i32,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AM,v64i8_vacc0_void,,,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AMZ,v64i8_vacc0_void,,,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AM,v64i8_vacc1_void,,,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4
+VAU,DP4AMZ,v64i8_vacc1_void,,,2,Rv64i8.Rv64u8,sideeffects,,HasVRF512.HasDP4

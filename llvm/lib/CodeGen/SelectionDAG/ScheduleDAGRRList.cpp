@@ -2816,9 +2816,23 @@ void RegReductionPQBase::initNodes(std::vector<SUnit> &sunits) {
   // Add pseudo dependency edges for two-address nodes.
   if (!Disable2AddrHack)
     AddPseudoTwoAddrDeps();
+
+#ifndef MOVIDIUS_PUSHBACK
+  //// *************************************************************************
+  //// Movidius: This prescheduling is known to cause scheduler deadlocks with 
+  //// code snippets like
+  ////  if(cond)
+  ////     printf("hello", __builtin_sin(x), x);
+  //// However, the BURR scheduler gives better performance than source-order, 
+  //// so we disable the errant sub-optimization here rather than switch to 
+  //// source-order pre-RA scheduling
+  //// *************************************************************************
+
   // Reroute edges to nodes with multiple uses.
   if (!TracksRegPressure && !SrcOrder)
     PrescheduleNodesWithMultipleUses();
+#endif // MOVIDIUS_PUSHBACK
+
   // Calculate node priorities.
   CalculateSethiUllmanNumbers();
 

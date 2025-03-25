@@ -2485,6 +2485,69 @@ MCRegister RAGreedy::selectOrSplitImpl(const LiveInterval &VirtReg,
                                    RecolorStack, Depth);
   }
 
+#ifdef MOVIDIUS_PUSHBACK
+  // Try to stash-retrieve from a vector register first to avoid
+  // spilling to stack
+  //
+  // For a 
+  //        def vregN
+  //        .......
+  //        use vregN
+  //        .......
+  //        def vregN
+  //        .......
+  //        use vregN
+  //
+  // We will need
+  //        def tmp
+  //        stashReg <- tmp
+  //        .......
+  //        tmp <- stashReg
+  //        use stashReg
+  //        .......
+  //        def tmp
+  //        stashReg <- tmp
+  //        .......
+  //        tmp <- stashReg
+  //        use tmp
+
+  // We find the stash reg here and pass it on to the spiller
+  // in order to reuse the spill logic. If the stash register is allocated to the
+  // vreg we will do a stash/retrieve instead of the spill/reload
+  const TargetRegisterClass *CurRC = MRI->getRegClass(VirtReg.reg());
+  const TargetRegisterClass *StashRC = TRI->getVectorStashClass(CurRC, *MF);
+
+  if (StashRC) {
+    // We need the stash reg to have the same interference characteristics
+    // The stash reg will be read whenever the vreg is read and will be
+    // written to every time there is a write to vreg
+    // So we try to find a register in the stash class for the current vreg itself
+    MRI->setRegClass(VirtReg.reg(), StashRC);
+    AllocationOrder StashRCAllocationOrder = AllocationOrder::create(VirtReg.reg(), *VRM, RegClassInfo, Matrix);
+
+    if (unsigned PhysReg = tryAssign(VirtReg, StashRCAllocationOrder, NewVRegs, FixedRegisters)) {
+      MRI->setRegClass(VirtReg.reg(), CurRC);
+
+      VRM->assignVirt2StashReg(VirtReg.reg(), PhysReg);
+
+      NamedRegionTimer T("spill", "Spiller", TimerGroupName,
+                         TimerGroupDescription, TimePassesIsEnabled);
+      LiveRangeEdit LRE(&VirtReg, NewVRegs, *MF, *LIS, VRM, this);
+
+      spiller().spill(LRE);
+      ExtraInfo->setStage(NewVRegs.begin(), NewVRegs.end(), RS_Done);
+      ExtraInfo->setStage(VirtReg, RS_Done);
+
+      if (VerifyEnabled)
+        MF->verify(this, "After spilling");
+      return PhysReg;
+    } else {
+      // Restore the register class and continue spilling onto stack
+      MRI->setRegClass(VirtReg.reg(), CurRC);
+    }
+  }
+#endif // MOVIDIUS_PUSHBACK
+
   // Finally spill VirtReg itself.
   if ((EnableDeferredSpilling ||
        TRI->shouldUseDeferredSpillingForVirtReg(*MF, VirtReg)) &&

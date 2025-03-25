@@ -9105,7 +9105,11 @@ getRegistersForValue(SelectionDAG &DAG, const SDLoc &DL,
   // Get the actual register value type.  This is important, because the user
   // may have asked for (e.g.) the AX register in i32 type.  We need to
   // remember that AX is actually i16 to get the right extension.
+#ifdef MOVIDIUS_PUSHBACK
+  MVT RegVT = *TRI.legalclasstypes_begin(*RC);
+#else // MOVIDIUS_PUSHBACK
   const MVT RegVT = *TRI.legalclasstypes_begin(*RC);
+#endif // MOVIDIUS_PUSHBACK
 
   if (OpInfo.ConstraintVT != MVT::Other && RegVT != MVT::Untyped) {
     // If this is an FP operand in an integer register (or visa versa), or more
@@ -9150,6 +9154,26 @@ getRegistersForValue(SelectionDAG &DAG, const SDLoc &DL,
   EVT ValueVT = OpInfo.ConstraintVT;
   if (OpInfo.ConstraintVT == MVT::Other)
     ValueVT = RegVT;
+// FIXME-SAURABH: Needs to be verified since the code around this has changed a lot in llvm9
+#ifdef MOVIDIUS_PUSHBACK
+    else {
+      // FIXME: Movidius - I don't know why LLVM does not do this already, it seems like the right
+      // thing to do.  I have not made this conditional on SHAVE because I think it is correct.
+      //
+      // Not doing this causes some really nasty problems with a mismatch between the source and
+      // destination types.  This was first observed in 'Movidius.org #11248'.  The root problem
+      // in this case was that a source register is type 'v8f16' is being mapped to a destination
+      // register of 'v16i8'.  The destination is simply chosen because it is the first in the
+      // list of VTs, not because it is the appropriate type.
+      //
+      // Iterate through the set of VTs looking for a match to the constraint, and use it instead.
+      for (auto iVT = TRI.legalclasstypes_begin(*RC); *iVT != MVT::Other; ++iVT)
+        if (ValueVT == *iVT) {
+          RegVT = *iVT;
+          break;
+        }
+    }
+#endif // MOVIDIUS_PUSHBACK
 
   // Initialize NumRegs.
   unsigned NumRegs = 1;

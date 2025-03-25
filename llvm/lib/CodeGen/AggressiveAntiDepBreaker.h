@@ -157,6 +157,12 @@ class LLVM_LIBRARY_VISIBILITY AggressiveAntiDepState {
     void FinishBlock() override;
 
   private:
+#ifdef MOVIDIUS_REQUIRED
+    void AddToCalleeSaveRegs(unsigned Reg);
+
+    BitVector calleeRegsVec;
+#endif // MOVIDIUS_REQUIRED
+
     /// Keep track of a position in the allocation order for each regclass.
     using RenameOrderType = std::map<const TargetRegisterClass *, unsigned>;
 

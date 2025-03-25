@@ -118,6 +118,9 @@
 #include "llvm/Transforms/Coroutines/CoroEarly.h"
 #include "llvm/Transforms/Coroutines/CoroElide.h"
 #include "llvm/Transforms/Coroutines/CoroSplit.h"
+#ifdef MOVIDIUS_PUSHBACK
+#include "llvm/Transforms/ExtendTruncateReduction.h"
+#endif
 #include "llvm/Transforms/HipStdPar/HipStdPar.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/Annotation2Metadata.h"

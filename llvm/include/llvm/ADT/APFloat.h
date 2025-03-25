@@ -355,6 +355,9 @@ public:
   APInt bitcastToAPInt() const;
   double convertToDouble() const;
   float convertToFloat() const;
+#ifdef MOVIDIUS_REQUIRED
+  float convertToHalf() const;
+#endif // MOVIDIUS_REQUIRED
 
   /// @}
 
@@ -1224,6 +1227,14 @@ public:
   /// the host float type without loss of precision. It can be IEEEsingle and
   /// shorter semantics, like IEEEhalf.
   float convertToFloat() const;
+
+#ifdef MOVIDIUS_REQUIRED
+  /// Converts this APFloat to host half value.
+  ///
+  /// \pre The APFloat must be built using semantics, that can be represented by
+  /// the host half type without loss of precision.
+  float convertToHalf() const;
+#endif // MOVIDIUS_REQUIRED
 
   bool operator==(const APFloat &RHS) const { return compare(RHS) == cmpEqual; }
 

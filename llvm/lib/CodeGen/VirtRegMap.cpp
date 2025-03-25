@@ -71,6 +71,9 @@ bool VirtRegMap::runOnMachineFunction(MachineFunction &mf) {
   Virt2SplitMap.clear();
   Virt2ShapeMap.clear();
 
+#ifdef MOVIDIUS_PUSHBACK
+  Virt2StashMap.clear();
+#endif // MOVIDIUS_PUSHBACK
   grow();
   return false;
 }
@@ -80,6 +83,9 @@ void VirtRegMap::grow() {
   Virt2PhysMap.resize(NumRegs);
   Virt2StackSlotMap.resize(NumRegs);
   Virt2SplitMap.resize(NumRegs);
+#ifdef MOVIDIUS_PUSHBACK
+  Virt2StashMap.resize(NumRegs);
+#endif // MOVIDIUS_PUSHBACK
 }
 
 void VirtRegMap::assignVirt2Phys(Register virtReg, MCPhysReg physReg) {
@@ -132,7 +138,17 @@ int VirtRegMap::assignVirt2StackSlot(Register virtReg) {
   return Virt2StackSlotMap[virtReg.id()] = createSpillSlot(RC);
 }
 
-void VirtRegMap::assignVirt2StackSlot(Register virtReg, int SS) {
+#ifdef MOVIDIUS_PUSHBACK
+int VirtRegMap::assignVirt2StashReg(unsigned virtReg, unsigned stashReg) {
+  assert(Register::isVirtualRegister(virtReg));
+// FIXME: Movidius - TODO: revisit this assert for stash reg
+//  assert(Virt2StashMap[virtReg] == NO_PHYS_REG &&
+//         "attempt to assign stash register to already stashed register");
+  return Virt2StashMap[virtReg] = stashReg;
+}
+#endif // MOVIDIUS_PUSHBACK
+
+ void VirtRegMap::assignVirt2StackSlot(Register virtReg, int SS) {
   assert(virtReg.isVirtual());
   assert(Virt2StackSlotMap[virtReg.id()] == NO_STACK_SLOT &&
          "attempt to assign stack slot to already spilled register");

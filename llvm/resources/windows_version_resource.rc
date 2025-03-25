@@ -4,6 +4,15 @@
 // The VERSIONINFO resource is described at:
 //   https://msdn.microsoft.com/en-gb/library/windows/desktop/aa381058(v=vs.85).aspx
 
+#ifdef MOVIDIUS_REQUIRED
+#include <verrsrc.h> // Defines VS_xxx constants
+
+#ifndef RC_DEBUG
+#define FF_DEBUG 0
+#else
+#define FF_DEBUG VS_FF_DEBUG
+#endif // RC_DEBUG
+#endif // MOVIDIUS_REQUIRED
 
 // Default values for required fields.
 
@@ -54,6 +63,19 @@
 
 1 VERSIONINFO
 FILEVERSION RC_VERSION_FIELD_1,RC_VERSION_FIELD_2,RC_VERSION_FIELD_3,RC_VERSION_FIELD_4
+#ifdef MOVIDIUS_REQUIRED
+PRODUCTVERSION RC_VERSION_FIELD_1,RC_VERSION_FIELD_2,RC_VERSION_FIELD_3,RC_VERSION_FIELD_4
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS FF_DEBUG
+FILEOS VOS_NT_WINDOWS32
+#ifdef RC_SHARED_LIB
+FILETYPE VFT_DLL
+#elif defined RC_EXE
+FILETYPE VFT_APP
+#else
+FILETYPE VFT_UNKNOWN
+#endif // RC_SHARED_LIB
+#endif // MOVIDIUS_REQUIRED
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN

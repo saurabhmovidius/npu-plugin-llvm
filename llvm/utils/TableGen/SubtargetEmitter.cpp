@@ -1830,11 +1830,29 @@ void SubtargetEmitter::ParseFeaturesFunction(raw_ostream &OS) {
   OS << "  InitMCProcessorInfo(CPU, TuneCPU, FS);\n"
      << "  const FeatureBitset &Bits = getFeatureBits();\n";
 
+#ifdef MOVIDIUS_REQUIRED
+  // Rather than having a long list of boolean member variables, it is much cleaner
+  // to use the generated bitset directly and use the generated enum of Features
+  // to index it. This means that when we add a new boolean Feature, we only need
+  // to add it in one place, and it becomes automatically available through the
+  // pre-existing Subtarget API
+  if (Target == "SHAVE") {
+    OS << "  subtargetFeatures = Bits;\n";
+  }
+#endif // MOVIDIUS_REQUIRED
+
   for (Record *R : Features) {
     // Next record
     StringRef Instance = R->getName();
     StringRef Value = R->getValueAsString("Value");
     StringRef FieldName = R->getValueAsString("FieldName");
+
+#ifdef MOVIDIUS_REQUIRED
+    // When the field name is "", we are using the bitset "subtargetFeatures" to
+    // track the feature support.
+    if (FieldName.empty())
+      continue;
+#endif // MOVIDIUS_REQUIRED
 
     if (Value=="true" || Value=="false")
       OS << "  if (Bits[" << Target << "::"

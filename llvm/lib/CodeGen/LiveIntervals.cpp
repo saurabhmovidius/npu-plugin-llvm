@@ -1498,8 +1498,15 @@ private:
 void LiveIntervals::handleMove(MachineInstr &MI, bool UpdateFlags) {
   // It is fine to move a bundle as a whole, but not an individual instruction
   // inside it.
+#ifndef MOVIDIUS_PUSHBACK
   assert((!MI.isBundled() || MI.getOpcode() == TargetOpcode::BUNDLE) &&
          "Cannot move instruction in bundle");
+#else // MOVIDIUS_PUSHBACK
+  // The original assert looks like a bug, and this change fixes it
+  // FIXME-llvm10: Possibly not needed any more. We will see
+  assert(!MI.isInsideBundle() && "Can't handle bundled instructions yet.");
+#endif // MOVIDIUS_PUSHBACK
+  
   SlotIndex OldIndex = Indexes->getInstructionIndex(MI);
   Indexes->removeMachineInstrFromMaps(MI);
   SlotIndex NewIndex = Indexes->insertMachineInstrInMaps(MI);

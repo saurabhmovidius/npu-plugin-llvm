@@ -1158,6 +1158,18 @@ void TargetPassConfig::addMachinePasses() {
   // Expand pseudo instructions before second scheduling pass.
   addPass(&ExpandPostRAPseudosID);
 
+#ifdef MOVIDIUS_REQUIRED
+  // FIXME: Movidius - blockplacement must be before predicator basic block placement.
+  //        Need to revisit this decision in light of LLVM v3.8 changes.
+  // In v3.7.1 the test '!TM->targetSchedulesPostRAScheduling()' below was not present, so
+  // it was only conditional on the optimisation level being not '-O0'.  Not sure if this
+  // should now also include this test?
+  if (getOptLevel() != CodeGenOptLevel::None) {
+    addBlockPlacement();
+    addPass(&IfConverterID);
+  }
+#endif // MOVIDIUS_REQUIRED
+
   // Run pre-sched2 passes.
   addPreSched2();
 
@@ -1174,13 +1186,27 @@ void TargetPassConfig::addMachinePasses() {
     else
       addPass(&PostRASchedulerID);
   }
+#ifdef MOVIDIUS_REQUIRED
+  else if ((getOptLevel() == CodeGenOptLevel::None) && !MISchedPostRA) {
+    // FIXME: Movidius - previously we had made calling 'PostRASchedulerID' unconditional
+    // but now there is a new test that can call 'PostMachineSchedulerID' instead.  Need to determine
+    // the relationship and what should be done.
+    // In v3.7.1 the test '!TM->targetSchedulesPostRAScheduling()' above was not present, so
+    // it was only conditional on the optimisation level being not '-O0'
+    //seba: we must call the scheduler on O0 for the instructions to be emitted unscheduled
+    addPass(&PostRASchedulerID);
+  }
+  printAndVerify("After PostRAScheduler");
+#endif // MOVIDIUS_REQUIRED
 
   // GC
   addGCPasses();
 
+#ifndef MOVIDIUS_REQUIRED
   // Basic block placement.
   if (getOptLevel() != CodeGenOptLevel::None)
     addBlockPlacement();
+#endif // MOVIDIUS_REQUIRED
 
   // Insert before XRay Instrumentation.
   addPass(&FEntryInserterID);

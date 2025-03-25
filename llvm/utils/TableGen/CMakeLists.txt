@@ -76,6 +76,11 @@ add_tablegen(llvm-tblgen LLVM
   RegisterBankEmitter.cpp
   RegisterInfoEmitter.cpp
   SearchableTableEmitter.cpp
+  #ifdef MOVIDIUS_REQUIRED
+  SHAVEConflictEmitter.cpp
+  SHAVEMutationEmitter.cpp
+  SHAVETestTargetFeaturesEmitter.cpp
+  #endif // MOVIDIUS_REQUIRED
   SubtargetEmitter.cpp
   SubtargetFeatureInfo.cpp
   TableGen.cpp

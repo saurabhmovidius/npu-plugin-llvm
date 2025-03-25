@@ -446,6 +446,12 @@ set(LLVM_CMAKE_DIR ${LLVM_MAIN_SRC_DIR}/cmake/modules)
 set(LLVM_EXAMPLES_BINARY_DIR ${LLVM_BINARY_DIR}/examples)
 set(LLVM_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 
+# #ifdef MOVIDIUS_BRANDING
+# This module is specific to how Movidius build CLang/LLVM and its libraries
+# for the 'moviCompile' product
+include(MovidiusEnvironment)
+# #endif // MOVIDIUS_BRANDING
+
 # List of all targets to be built by default:
 set(LLVM_ALL_TARGETS
   AArch64
@@ -467,6 +473,9 @@ set(LLVM_ALL_TARGETS
   WebAssembly
   X86
   XCore
+# #ifdef MOVIDIUS_REQUIRED
+  SHAVE
+# #endif // MOVIDIUS_REQUIRED
   )
 
 set(LLVM_ALL_EXPERIMENTAL_TARGETS
@@ -1246,7 +1255,10 @@ if( LLVM_INCLUDE_TESTS )
       ALWAYS_CLEAN)
   endif()
   add_subdirectory(utils/lit)
-  add_subdirectory(test)
+# #ifdef MOVIDIUS_REQUIRED
+# We do not use the llvm/test folder
+# add_subdirectory(test)
+# #endif // MOVIDIUS_REQUIRED
   add_subdirectory(unittests)
 
   if (WIN32)

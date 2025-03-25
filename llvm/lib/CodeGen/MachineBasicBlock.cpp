@@ -1462,10 +1462,29 @@ void MachineBasicBlock::ReplaceUsesOfBlockWith(MachineBasicBlock *Old,
   MachineBasicBlock::instr_iterator I = instr_end();
   while (I != instr_begin()) {
     --I;
+
+#ifdef MOVIDIUS_FIXME
+    bool isSHAVE = (getParent()->getTarget().getTargetTriple().getArch() == Triple::shave);
+
+    if (!isSHAVE)
+#endif // MOVIDIUS_FIXME
     if (!I->isTerminator()) break;
 
     // Scan the operands of this machine instruction, replacing any uses of Old
     // with New.
+#ifdef MOVIDIUS_FIXME
+    // FIXME: Movidius - This is not right, but without this the compiler
+    //        crashes, for example:
+    //            Compilers/LeonTools/src/newlib/newlib/libc/time/strptime.c
+    //        We need to see how other targets deal with indirect branches
+    //        and copy them.
+
+    // Traverse the entire MBB because SHAVE uses indirect branching i.e.:
+    //          LSU.LDI[LH] reg branchAddr
+    //          other instructions
+    //          BRU.JMP reg
+    if (!isSHAVE || !I->isPHI())
+#endif // MOVIDIUS_FIXME
     for (unsigned i = 0, e = I->getNumOperands(); i != e; ++i)
       if (I->getOperand(i).isMBB() &&
           I->getOperand(i).getMBB() == Old)

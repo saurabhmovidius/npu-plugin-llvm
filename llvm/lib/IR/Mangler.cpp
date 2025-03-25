@@ -26,6 +26,9 @@ namespace {
 enum ManglerPrefixTy {
   Default,      ///< Emit default string before each symbol.
   Private,      ///< Emit "private" prefix before each symbol.
+#ifdef MOVIDIUS_REQUIRED
+  LocalLinkage, ///< Emit "local" prefix before each symbol
+#endif // MOVIDIUS_REQUIRED
   LinkerPrivate ///< Emit "linker private" prefix before each symbol.
 };
 }
@@ -51,6 +54,11 @@ static void getNameWithPrefixImpl(raw_ostream &OS, const Twine &GVName,
     OS << DL.getPrivateGlobalPrefix();
   else if (PrefixTy == LinkerPrivate)
     OS << DL.getLinkerPrivateGlobalPrefix();
+#ifdef MOVIDIUS_REQUIRED
+  // FIXME: Movidius - this should come from the target specific 'DataLayout' interface
+  else if (PrefixTy == LocalLinkage)
+    OS << ".I";
+#endif // MOVIDIUS_REQUIRED
 
   if (Prefix != '\0')
     OS << Prefix;
@@ -126,6 +134,17 @@ void Mangler::getNameWithPrefix(raw_ostream &OS, const GlobalValue *GV,
     else
       PrefixTy = Private;
   }
+#ifdef MOVIDIUS_REQUIRED
+  // FIXME: Movidius - should qualify this by checking that the current target is SHAVE;
+  //        or generalise properly into a formal extension to LLVM
+  else if (GV->hasInternalLinkage() && GV->hasName()) {
+    StringRef Name = GV->getName();
+
+    // Don't do this if the symbol already starts with '.I'
+    if ((Name[0] != '.') || (Name[1] != 'I'))
+      PrefixTy = LocalLinkage;
+  }
+#endif // MOVIDIUS_REQUIRED
 
   const DataLayout &DL = GV->getParent()->getDataLayout();
   if (!GV->hasName()) {

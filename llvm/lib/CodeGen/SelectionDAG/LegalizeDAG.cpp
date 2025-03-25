@@ -141,7 +141,11 @@ private:
   void ExpandFrexpLibCall(SDNode *Node, SmallVectorImpl<SDValue> &Results);
   void ExpandFPLibCall(SDNode *Node, RTLIB::Libcall LC,
                        SmallVectorImpl<SDValue> &Results);
-  void ExpandFPLibCall(SDNode *Node, RTLIB::Libcall Call_F32,
+  void ExpandFPLibCall(SDNode *Node,
+#ifdef MOVIDIUS_PUSHBACK
+                       RTLIB::Libcall Call_F16,
+#endif // MOVIDIUS_PUSHBACK
+                       RTLIB::Libcall Call_F32,
                        RTLIB::Libcall Call_F64, RTLIB::Libcall Call_F80,
                        RTLIB::Libcall Call_F128,
                        RTLIB::Libcall Call_PPCF128,
@@ -2175,6 +2179,9 @@ void SelectionDAGLegalize::ExpandFPLibCall(SDNode* Node,
 
 /// Expand the node to a libcall based on the result type.
 void SelectionDAGLegalize::ExpandFPLibCall(SDNode* Node,
+#ifdef MOVIDIUS_PUSHBACK
+                                           RTLIB::Libcall Call_F16,
+#endif // MOVIDIUS_PUSHBACK
                                            RTLIB::Libcall Call_F32,
                                            RTLIB::Libcall Call_F64,
                                            RTLIB::Libcall Call_F80,
@@ -2182,6 +2189,9 @@ void SelectionDAGLegalize::ExpandFPLibCall(SDNode* Node,
                                            RTLIB::Libcall Call_PPCF128,
                                            SmallVectorImpl<SDValue> &Results) {
   RTLIB::Libcall LC = RTLIB::getFPLibCall(Node->getSimpleValueType(0),
+#ifdef MOVIDIUS_PUSHBACK
+                                          Call_F16,
+#endif // MOVIDIUS_PUSHBACK
                                           Call_F32, Call_F64, Call_F80,
                                           Call_F128, Call_PPCF128);
   ExpandFPLibCall(Node, LC, Results);
@@ -2215,7 +2225,17 @@ void SelectionDAGLegalize::ExpandArgFPLibCall(SDNode* Node,
                                             RTLIB::Libcall Call_PPCF128,
                                             SmallVectorImpl<SDValue> &Results) {
   EVT InVT = Node->getOperand(Node->isStrictFPOpcode() ? 1 : 0).getValueType();
+
+#ifdef MOVIDIUS_PUSHBACK
+  // This should never trigger when targeting SHAVE.
+  assert((InVT.getSimpleVT().SimpleTy != MVT::f16) &&
+         "Unexpected request for libcall!");
+
   RTLIB::Libcall LC = RTLIB::getFPLibCall(InVT.getSimpleVT(),
+                                          RTLIB::UNKNOWN_LIBCALL,
+#else
+  RTLIB::Libcall LC = RTLIB::getFPLibCall(InVT.getSimpleVT(),
+#endif // MOVIDIUS_PUSHBACK
                                           Call_F32, Call_F64, Call_F80,
                                           Call_F128, Call_PPCF128);
   ExpandFPLibCall(Node, LC, Results);
@@ -4397,7 +4417,11 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
   }
   case ISD::FMINNUM:
   case ISD::STRICT_FMINNUM:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::FMIN_F32, RTLIB::FMIN_F64,
+#else  // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::FMIN_F16, RTLIB::FMIN_F32, RTLIB::FMIN_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::FMIN_F80, RTLIB::FMIN_F128,
                     RTLIB::FMIN_PPCF128, Results);
     break;
@@ -4406,30 +4430,52 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
   // these nodes either (see PR63267 for example).
   case ISD::FMAXNUM:
   case ISD::STRICT_FMAXNUM:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::FMAX_F32, RTLIB::FMAX_F64,
+#else  // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::FMAX_F16, RTLIB::FMAX_F32, RTLIB::FMAX_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::FMAX_F80, RTLIB::FMAX_F128,
                     RTLIB::FMAX_PPCF128, Results);
     break;
   case ISD::FSQRT:
   case ISD::STRICT_FSQRT:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::SQRT_F32, RTLIB::SQRT_F64,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FSQRT is lowered to SAU.SQT, so this should never trigger when targeting SHAVE
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::SQRT_F32, RTLIB::SQRT_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::SQRT_F80, RTLIB::SQRT_F128,
                     RTLIB::SQRT_PPCF128, Results);
     break;
   case ISD::FCBRT:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::CBRT_F32, RTLIB::CBRT_F64,
+#else // MOVIDIUS_PUSHBACK
+    // FIXME-SAURABH: Need to Handle cubic root in libc
+    ExpandFPLibCall(Node, RTLIB::CBRT_F16, RTLIB::CBRT_F32, RTLIB::CBRT_F64,
+#endif
                     RTLIB::CBRT_F80, RTLIB::CBRT_F128,
                     RTLIB::CBRT_PPCF128, Results);
     break;
   case ISD::FSIN:
   case ISD::STRICT_FSIN:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::SIN_F32, RTLIB::SIN_F64,
+#else  // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::SIN_F16, RTLIB::SIN_F32, RTLIB::SIN_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::SIN_F80, RTLIB::SIN_F128,
                     RTLIB::SIN_PPCF128, Results);
     break;
   case ISD::FCOS:
   case ISD::STRICT_FCOS:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::COS_F32, RTLIB::COS_F64,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::COS_F16, RTLIB::COS_F32, RTLIB::COS_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::COS_F80, RTLIB::COS_F128,
                     RTLIB::COS_PPCF128, Results);
     break;
@@ -4439,60 +4485,110 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
     break;
   case ISD::FLOG:
   case ISD::STRICT_FLOG:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::LOG_F32, RTLIB::LOG_F64, RTLIB::LOG_F80,
+#else // MOVIDIUS_PUSHBACK
+    // FIXME-SAURABH: Do we need LOG_FINITE invocation too?
+    ExpandFPLibCall(Node, RTLIB::LOG_F16, RTLIB::LOG_F32, RTLIB::LOG_F64, RTLIB::LOG_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::LOG_F128, RTLIB::LOG_PPCF128, Results);
     break;
   case ISD::FLOG2:
   case ISD::STRICT_FLOG2:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::LOG2_F32, RTLIB::LOG2_F64, RTLIB::LOG2_F80,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FLOG2 is lowered to SAU.LOG2, so this should never trigger when targeting SHAVE
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::LOG2_F32, RTLIB::LOG2_F64, RTLIB::LOG2_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::LOG2_F128, RTLIB::LOG2_PPCF128, Results);
     break;
   case ISD::FLOG10:
   case ISD::STRICT_FLOG10:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::LOG10_F32, RTLIB::LOG10_F64, RTLIB::LOG10_F80,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::LOG10_F16, RTLIB::LOG10_F32, RTLIB::LOG10_F64, RTLIB::LOG10_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::LOG10_F128, RTLIB::LOG10_PPCF128, Results);
     break;
   case ISD::FEXP:
   case ISD::STRICT_FEXP:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::EXP_F32, RTLIB::EXP_F64, RTLIB::EXP_F80,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::EXP_F16, RTLIB::EXP_F32, RTLIB::EXP_F64, RTLIB::EXP_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::EXP_F128, RTLIB::EXP_PPCF128, Results);
     break;
   case ISD::FEXP2:
   case ISD::STRICT_FEXP2:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::EXP2_F32, RTLIB::EXP2_F64, RTLIB::EXP2_F80,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FEXP2 is lowered to SAU.EXP2, so this should never trigger when targeting SHAVE
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::EXP2_F32, RTLIB::EXP2_F64, RTLIB::EXP2_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::EXP2_F128, RTLIB::EXP2_PPCF128, Results);
     break;
   case ISD::FEXP10:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::EXP10_F32, RTLIB::EXP10_F64, RTLIB::EXP10_F80,
+#else // MOVIDIUS_PUSHBACK
+    // FIXME: We don't seem to be legalizing this node in SHAVE.
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::EXP10_F32,
+                    RTLIB::EXP10_F64, RTLIB::EXP10_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::EXP10_F128, RTLIB::EXP10_PPCF128, Results);
     break;
   case ISD::FTRUNC:
   case ISD::STRICT_FTRUNC:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::TRUNC_F32, RTLIB::TRUNC_F64,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::TRUNC_F16, RTLIB::TRUNC_F32, RTLIB::TRUNC_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::TRUNC_F80, RTLIB::TRUNC_F128,
                     RTLIB::TRUNC_PPCF128, Results);
     break;
   case ISD::FFLOOR:
   case ISD::STRICT_FFLOOR:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::FLOOR_F32, RTLIB::FLOOR_F64,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::FLOOR_F16, RTLIB::FLOOR_F32, RTLIB::FLOOR_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::FLOOR_F80, RTLIB::FLOOR_F128,
                     RTLIB::FLOOR_PPCF128, Results);
     break;
   case ISD::FCEIL:
   case ISD::STRICT_FCEIL:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::CEIL_F32, RTLIB::CEIL_F64,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::CEIL_F16, RTLIB::CEIL_F32, RTLIB::CEIL_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::CEIL_F80, RTLIB::CEIL_F128,
                     RTLIB::CEIL_PPCF128, Results);
     break;
   case ISD::FRINT:
   case ISD::STRICT_FRINT:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::RINT_F32, RTLIB::RINT_F64,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FRINT is promoted to FP32 for FP16, so this should never trigger when targeting SHAVE
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::RINT_F32, RTLIB::RINT_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::RINT_F80, RTLIB::RINT_F128,
                     RTLIB::RINT_PPCF128, Results);
     break;
   case ISD::FNEARBYINT:
   case ISD::STRICT_FNEARBYINT:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::NEARBYINT_F32,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::NEARBYINT_F16, RTLIB::NEARBYINT_F32,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::NEARBYINT_F64,
                     RTLIB::NEARBYINT_F80,
                     RTLIB::NEARBYINT_F128,
@@ -4500,7 +4596,11 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
     break;
   case ISD::FROUND:
   case ISD::STRICT_FROUND:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::ROUND_F32,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::ROUND_F16, RTLIB::ROUND_F32,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::ROUND_F64,
                     RTLIB::ROUND_F80,
                     RTLIB::ROUND_F128,
@@ -4508,7 +4608,12 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
     break;
   case ISD::FROUNDEVEN:
   case ISD::STRICT_FROUNDEVEN:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::ROUNDEVEN_F32,
+#else // MOVIDIUS_PUSHBACK
+    // FIXME-LLVM11 : This need to be checked. Do we need F16 specific call
+    ExpandFPLibCall(Node, RTLIB::ROUNDEVEN_F32, RTLIB::ROUNDEVEN_F32,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::ROUNDEVEN_F64,
                     RTLIB::ROUNDEVEN_F80,
                     RTLIB::ROUNDEVEN_F128,
@@ -4516,7 +4621,13 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
     break;
   case ISD::FLDEXP:
   case ISD::STRICT_FLDEXP:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::LDEXP_F32, RTLIB::LDEXP_F64, RTLIB::LDEXP_F80,
+#else // MOVIDIUS_PUSHBACK
+    // FIXME: We don't seem to be legalizing this node in SHAVE.
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::LDEXP_F32,
+                    RTLIB::LDEXP_F64, RTLIB::LDEXP_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::LDEXP_F128, RTLIB::LDEXP_PPCF128, Results);
     break;
   case ISD::FFREXP: {
@@ -4566,7 +4677,11 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
   }
   case ISD::FPOW:
   case ISD::STRICT_FPOW:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::POW_F32, RTLIB::POW_F64, RTLIB::POW_F80,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::POW_F16, RTLIB::POW_F32, RTLIB::POW_F64, RTLIB::POW_F80,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::POW_F128, RTLIB::POW_PPCF128, Results);
     break;
   case ISD::LROUND:
@@ -4599,31 +4714,55 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
     break;
   case ISD::FDIV:
   case ISD::STRICT_FDIV:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::DIV_F32, RTLIB::DIV_F64,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FDIV is natively supported for FP16 on SHAVE, so this should never trigger
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::DIV_F32, RTLIB::DIV_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::DIV_F80, RTLIB::DIV_F128,
                     RTLIB::DIV_PPCF128, Results);
     break;
   case ISD::FREM:
   case ISD::STRICT_FREM:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::REM_F32, RTLIB::REM_F64,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FDIV is natively supported for FP16 on SHAVE, so this should never trigger
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::REM_F32, RTLIB::REM_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::REM_F80, RTLIB::REM_F128,
                     RTLIB::REM_PPCF128, Results);
     break;
   case ISD::FMA:
   case ISD::STRICT_FMA:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::FMA_F32, RTLIB::FMA_F64,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::FMA_F16, RTLIB::FMA_F32, RTLIB::FMA_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::FMA_F80, RTLIB::FMA_F128,
                     RTLIB::FMA_PPCF128, Results);
     break;
   case ISD::FADD:
   case ISD::STRICT_FADD:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::ADD_F32, RTLIB::ADD_F64,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FADD is natively supported for FP16 on SHAVE, so this should never trigger
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::ADD_F32, RTLIB::ADD_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::ADD_F80, RTLIB::ADD_F128,
                     RTLIB::ADD_PPCF128, Results);
     break;
   case ISD::FMUL:
   case ISD::STRICT_FMUL:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::MUL_F32, RTLIB::MUL_F64,
+#else // MOVIDIUS_PUSHBACK
+    // ISD::FMUL is natively supported for FP16 on SHAVE, so this should never trigger
+    ExpandFPLibCall(Node, RTLIB::UNKNOWN_LIBCALL, RTLIB::MUL_F32, RTLIB::MUL_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::MUL_F80, RTLIB::MUL_F128,
                     RTLIB::MUL_PPCF128, Results);
     break;
@@ -4791,7 +4930,11 @@ void SelectionDAGLegalize::ConvertNodeToLibcall(SDNode *Node) {
   }
   case ISD::FSUB:
   case ISD::STRICT_FSUB:
+#ifndef MOVIDIUS_PUSHBACK
     ExpandFPLibCall(Node, RTLIB::SUB_F32, RTLIB::SUB_F64,
+#else // MOVIDIUS_PUSHBACK
+    ExpandFPLibCall(Node, RTLIB::SUB_F32, RTLIB::SUB_F32, RTLIB::SUB_F64,
+#endif // MOVIDIUS_PUSHBACK
                     RTLIB::SUB_F80, RTLIB::SUB_F128,
                     RTLIB::SUB_PPCF128, Results);
     break;

@@ -328,6 +328,9 @@ FUNCTION_PASS("dwarf-eh-prepare", DwarfEHPreparePass(TM))
 FUNCTION_PASS("expand-large-div-rem", ExpandLargeDivRemPass(TM))
 FUNCTION_PASS("expand-large-fp-convert", ExpandLargeFpConvertPass(TM))
 FUNCTION_PASS("expand-memcmp", ExpandMemCmpPass(TM))
+#ifdef MOVIDIUS_PUSHBACK
+FUNCTION_PASS("extend-truncate-reduction", ExtendTruncateReduction())
+#endif
 FUNCTION_PASS("fix-irreducible", FixIrreduciblePass())
 FUNCTION_PASS("flattencfg", FlattenCFGPass())
 FUNCTION_PASS("float2int", Float2IntPass())

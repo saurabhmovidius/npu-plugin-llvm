@@ -49,6 +49,11 @@ public:
     SV_XCOFF,
     SV_SPIRV,
     SV_DXContainer,
+#ifdef MOVIDIUS_FIXME
+    // FIXME: Movidius - this adds a new section type 'SV_SHAVE', but we should
+    // see if there is a better way of doing this
+    SV_SHAVE
+#endif // MOVIDIUS_FIXME
   };
 
   /// Express the state of bundle locked groups while emitting code.

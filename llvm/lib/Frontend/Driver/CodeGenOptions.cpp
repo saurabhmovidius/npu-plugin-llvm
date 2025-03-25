@@ -46,6 +46,12 @@ TargetLibraryInfoImpl *createTLII(llvm::Triple &TargetTriple,
     TLII->addVectorizableFunctionsFromVecLib(TargetLibraryInfoImpl::ArmPL,
                                              TargetTriple);
     break;
+#ifdef MOVIDIUS_REQUIRED
+  case VectorLibrary::SHAVEVL:
+    TLII->addVectorizableFunctionsFromVecLib(TargetLibraryInfoImpl::SHAVEVL,
+                                             TargetTriple);
+    break;
+#endif // MOVIDIUS_REQUIRED
   default:
     break;
   }

@@ -122,6 +122,13 @@ AggressiveAntiDepBreaker::AggressiveAntiDepBreaker(
     TargetSubtargetInfo::RegClassVector &CriticalPathRCs)
     : MF(MFi), MRI(MF.getRegInfo()), TII(MF.getSubtarget().getInstrInfo()),
       TRI(MF.getSubtarget().getRegisterInfo()), RegClassInfo(RCI) {
+#ifdef MOVIDIUS_REQUIRED
+  calleeRegsVec.resize(TRI->getNumRegs());
+  // Exclude Callee Saved Regs from AllocatableSet.
+  for (const uint16_t *I = TRI->getCalleeSavedRegs(&MFi); *I; ++I)
+    AddToCalleeSaveRegs(*I);
+#endif // MOVIDIUS_REQUIRED
+
   /* Collect a bitset of all registers that are only broken if they
      are on the critical path. */
   for (unsigned i = 0, e = CriticalPathRCs.size(); i < e; ++i) {
@@ -142,6 +149,13 @@ AggressiveAntiDepBreaker::AggressiveAntiDepBreaker(
 AggressiveAntiDepBreaker::~AggressiveAntiDepBreaker() {
   delete State;
 }
+
+#ifdef MOVIDIUS_REQUIRED
+void AggressiveAntiDepBreaker::AddToCalleeSaveRegs(unsigned Reg) {
+  for (MCRegAliasIterator I(Reg, TRI, true); I.isValid(); ++I)
+    calleeRegsVec.set(*I);
+}
+#endif // MOVIDIUS_REQUIRED
 
 void AggressiveAntiDepBreaker::StartBlock(MachineBasicBlock *BB) {
   assert(!State);
@@ -623,6 +637,9 @@ bool AggressiveAntiDepBreaker::FindSuitableFreeRegisters(
     if (R == 0) R = Order.size();
     --R;
     const unsigned NewSuperReg = Order[R];
+#ifdef MOVIDIUS_REQUIRED
+    if (calleeRegsVec.test(NewSuperReg)) continue;
+#endif // MOVIDIUS_REQUIRED
     // Don't consider non-allocatable registers
     if (!MRI.isAllocatable(NewSuperReg)) continue;
     // Don't replace a register with itself.
@@ -829,7 +846,11 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
         LLVM_DEBUG(dbgs() << "\tAntidep reg: " << printReg(AntiDepReg, TRI));
         assert(AntiDepReg != 0 && "Anti-dependence on reg0?");
 
+#ifndef MOVIDIUS_REQUIRED
         if (!MRI.isAllocatable(AntiDepReg)) {
+#else // MOVIDIUS_REQUIRED
+        if (calleeRegsVec.test(AntiDepReg) || !MRI.isAllocatable(AntiDepReg)) {
+#endif // MOVIDIUS_REQUIRED
           // Don't break anti-dependencies on non-allocatable registers.
           LLVM_DEBUG(dbgs() << " (non-allocatable)\n");
           continue;
@@ -847,7 +868,18 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
         } else {
           // No anti-dep breaking for implicit deps
           MachineOperand *AntiDepOp = MI.findRegisterDefOperand(AntiDepReg);
+#ifndef MOVIDIUS_REQUIRED
           assert(AntiDepOp && "Can't find index for defined register operand");
+#else // MOVIDIUS_REQUIRED
+          // FIXME: Movidius - TODO: there are still some cases which are not covered here
+          if (AntiDepOp == nullptr) {
+            for (MCRegAliasIterator I(AntiDepReg, TRI, false); I.isValid(); ++I) {
+              AntiDepOp = MI.findRegisterDefOperand(*I);
+              if (AntiDepOp != nullptr)
+                break;
+            }
+          }
+#endif // MOVIDIUS_REQUIRED
           if (!AntiDepOp || AntiDepOp->isImplicit()) {
             LLVM_DEBUG(dbgs() << " (implicit)\n");
             continue;

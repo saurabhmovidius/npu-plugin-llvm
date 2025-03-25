@@ -10,3 +10,7 @@ add_subdirectory(ObjCARC)
 add_subdirectory(Coroutines)
 add_subdirectory(CFGuard)
 add_subdirectory(HipStdPar)
+#ifdef MOVIDIUS_PUSHBACK
+# This pass compensates for the ISO C/C++ UACs and improves vectorisation opportunities
+add_subdirectory(ExtendTruncateReduction)
+#endif // MOVIDIUS_PUSHBACK

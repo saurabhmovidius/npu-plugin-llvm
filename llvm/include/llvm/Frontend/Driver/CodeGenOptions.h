@@ -30,6 +30,10 @@ enum class VectorLibrary {
   SLEEF,              // SLEEF SIMD Library for Evaluating Elementary Functions.
   Darwin_libsystem_m, // Use Darwin's libsystem_m vector functions.
   ArmPL               // Arm Performance Libraries.
+#ifdef MOVIDIUS_REQUIRED
+  ,
+  SHAVEVL             // Intel SHAVE vector library
+#endif // MOVIDIUS_REQUIRED
 };
 
 TargetLibraryInfoImpl *createTLII(llvm::Triple &TargetTriple,

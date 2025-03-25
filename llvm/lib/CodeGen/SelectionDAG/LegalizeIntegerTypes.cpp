@@ -25,6 +25,9 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/KnownBits.h"
 #include "llvm/Support/raw_ostream.h"
+#ifdef MOVIDIUS_REQUIRED
+#include "llvm/Target/TargetMachine.h"
+#endif // MOVIDIUS_REQUIRED
 #include <algorithm>
 using namespace llvm;
 
@@ -3747,6 +3750,18 @@ void DAGTypeLegalizer::ExpandIntRes_FP_TO_XINT(SDNode *N, SDValue &Lo,
     return;
   }
 
+#ifdef MOVIDIUS_REQUIRED
+  // FIXME: This can be refactored similarly to how it's done for bf16 below.
+  // Special handling for f16 -> i64
+  if ((VT == MVT::i64) && (Op.getValueType() == MVT::f16)) {
+    SDValue getFPExtend = DAG.getNode(ISD::FP_EXTEND, dl, MVT::f32, Op);
+    TargetLowering::MakeLibCallOptions tmpCallOptions;
+    RTLIB::Libcall FpToXIntLC =
+        IsSigned ? RTLIB::FPTOSINT_F32_I64 : RTLIB::FPTOUINT_F32_I64;
+    SplitInteger(TLI.makeLibCall(DAG, FpToXIntLC, MVT::i64, getFPExtend,
+          tmpCallOptions, dl, Chain).first, Lo, Hi);
+  } else {
+#endif // MOVIDIUS_REQUIRED
   if (Op.getValueType() == MVT::bf16) {
     // Extend to f32 as there is no bf16 libcall.
     Op = fpExtendHelper(Op, Chain, IsStrict, MVT::f32, dl, DAG);
@@ -3761,8 +3776,12 @@ void DAGTypeLegalizer::ExpandIntRes_FP_TO_XINT(SDNode *N, SDValue &Lo,
                                                     CallOptions, dl, Chain);
   SplitInteger(Tmp.first, Lo, Hi);
 
+  // FIXME-LLVM10: Is this needed for the f16->i64 conversion too?
   if (IsStrict)
     ReplaceValueWith(SDValue(N, 1), Tmp.second);
+#ifdef MOVIDIUS_REQUIRED
+  }
+#endif // MOVIDIUS_REQUIRED
 }
 
 void DAGTypeLegalizer::ExpandIntRes_FP_TO_XINT_SAT(SDNode *N, SDValue &Lo,
@@ -5397,6 +5416,21 @@ SDValue DAGTypeLegalizer::ExpandIntOp_XINT_TO_FP(SDNode *N) {
   SDValue Chain = IsStrict ? N->getOperand(0) : SDValue();
   SDValue Op = N->getOperand(IsStrict ? 1 : 0);
   EVT DstVT = N->getValueType(0);
+
+#ifdef MOVIDIUS_REQUIRED
+  // Special handling for i64 to f16.
+  // FIXME: Maybe need CallOptions.setSExt(true), or strict handle?
+  if ((DstVT == MVT::f16) && (Op.getValueType() == MVT::i64)) {
+    TargetLowering::MakeLibCallOptions tmpCallOptions;
+    RTLIB::Libcall XIntToFPLC =
+        IsSigned ? RTLIB::SINTTOFP_I64_F32 : RTLIB::UINTTOFP_I64_F32;
+    std::pair<SDValue, SDValue> Tmp = TLI.makeLibCall(
+        DAG, XIntToFPLC, MVT::f32, Op, tmpCallOptions, SDLoc(N), Chain);
+    return DAG.getNode(ISD::FP_ROUND, SDLoc(N), MVT::f16, Tmp.first,
+                       DAG.getConstant(0, SDLoc(N), MVT::i32));
+  }
+#endif // MOVIDIUS_REQUIRED
+
   RTLIB::Libcall LC = IsSigned ? RTLIB::getSINTTOFP(Op.getValueType(), DstVT)
                                : RTLIB::getUINTTOFP(Op.getValueType(), DstVT);
   assert(LC != RTLIB::UNKNOWN_LIBCALL &&

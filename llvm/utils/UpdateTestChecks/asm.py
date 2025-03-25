@@ -202,6 +202,12 @@ ASM_FUNCTION_WASM_RE = re.compile(
     flags=(re.M | re.S),
 )
 
+ASM_FUNCTION_SHAVE_RE = re.compile(
+    r"^\s*(?P<func>\w+):\n"
+    r"(?P<body>.*?)\n"
+    r"^.Lfunc_end[0-9]+:\s+// End of the definition for function '(?P=func)'\n",
+    flags=(re.M | re.S))
+
 # We parse the function name from OpName, and grab the variable name 'var'
 # for this function. Then we match that when the variable is assigned with
 # OpFunction and match its body.
@@ -478,6 +484,15 @@ def scrub_asm_wasm(asm, args):
     asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r"", asm)
     return asm
 
+def scrub_asm_shave(asm, args):
+    # Scrub runs of whitespace out of the assembly, but leave the leading
+    # whitespace in place.
+    asm = common.SCRUB_WHITESPACE_RE.sub(r" ", asm)
+    # Expand the tabs used for indentation.
+    asm = string.expandtabs(asm, 2)
+    # Strip trailing whitespace.
+    asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r"", asm)
+    return asm
 
 def scrub_asm_ve(asm, args):
     # Scrub runs of whitespace out of the assembly, but leave the leading
@@ -582,6 +597,7 @@ def get_run_handler(triple):
         "nvptx": (scrub_asm_nvptx, ASM_FUNCTION_NVPTX_RE),
         "loongarch32": (scrub_asm_loongarch, ASM_FUNCTION_LOONGARCH_RE),
         "loongarch64": (scrub_asm_loongarch, ASM_FUNCTION_LOONGARCH_RE),
+        "shave": (scrub_asm_shave, ASM_FUNCTION_SHAVE_RE),
     }
     handler = None
     best_prefix = ""

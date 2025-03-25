@@ -13,6 +13,10 @@
 int @TOOL_NAME@_main(int argc, char **, const llvm::ToolContext &);
 
 int main(int argc, char **argv) {
+#ifndef MOVIDIUS_CLANG_AS_DLL
   llvm::InitLLVM X(argc, argv);
+#else
+  llvm::InitLLVMDLL X(argc, argv);
+#endif
   return @TOOL_NAME@_main(argc, argv, {argv[0], nullptr, false});
 }

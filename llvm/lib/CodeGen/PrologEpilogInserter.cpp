@@ -495,6 +495,17 @@ static void assignCalleeSavedSpillSlots(MachineFunction &F,
       unsigned Reg = CS.getReg();
       const TargetRegisterClass *RC = RegInfo->getMinimalPhysRegClass(Reg);
 
+#ifdef MOVIDIUS_PUSHBACK
+      // We already have a Stash Register assigned to this CSI reg
+      // For SHAVE we are counting on 'assignCalleeSavedSpillSlots' to
+      // assign the stash regs and return false.
+      // Architectures handling the 'assignCalleeSavedSpillSlots' completely
+      // on their own, will need to do the stash register allocation for CSRs
+      // themselves as well
+      if (CS.getStashReg())
+        continue;
+#endif // MOVIDIUS_PUSHBACK
+
       int FrameIdx;
       if (RegInfo->hasReservedSpillSlot(F, Reg, FrameIdx)) {
         CS.setFrameIdx(FrameIdx);
@@ -618,6 +629,12 @@ static void insertCSRSaves(MachineBasicBlock &SaveBlock,
       // Insert the spill to the stack frame.
       unsigned Reg = CS.getReg();
 
+#ifdef MOVIDIUS_PUSHBACK
+      DebugLoc DL = (I != SaveBlock.end()) ? I->getDebugLoc() : DebugLoc();
+      if (unsigned StashReg = CS.getStashReg())
+        TII.copyPhysReg(SaveBlock, I, DL, StashReg, Reg, false);
+      else
+#endif // MOVIDIUS_PUSHBACK
       if (CS.isSpilledToReg()) {
         BuildMI(SaveBlock, I, DebugLoc(),
                 TII.get(TargetOpcode::COPY), CS.getDstReg())
@@ -629,6 +646,19 @@ static void insertCSRSaves(MachineBasicBlock &SaveBlock,
       }
     }
   }
+
+#ifdef MOVIDIUS_PUSHBACK
+  // Mark the stash registers as live throughout the function
+  for (unsigned i = 0, e = CSI.size(); i != e; ++i) {
+    if (MCPhysReg Reg = CSI[i].getStashReg()) {
+      for (MachineBasicBlock &MBB : MF) {
+        if (MBB.getNumber() == SaveBlock.getNumber())
+          continue;
+        MBB.addLiveIn(Reg);
+      }
+    }
+  }
+#endif // MOVIDIUS_PUSHBACK
 }
 
 /// Insert restore code for the callee-saved registers used in the function.
@@ -646,6 +676,13 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
   if (!TFI->restoreCalleeSavedRegisters(RestoreBlock, I, CSI, TRI)) {
     for (const CalleeSavedInfo &CI : reverse(CSI)) {
       unsigned Reg = CI.getReg();
+
+#ifdef MOVIDIUS_PUSHBACK
+      DebugLoc DL = (I != RestoreBlock.end()) ? I->getDebugLoc() : DebugLoc();
+      if (unsigned StashReg = CI.getStashReg())
+        TII.copyPhysReg(RestoreBlock, I, DL, Reg, StashReg, false);
+      else
+#endif // MOVIDIUS_PUSHBACK      
       if (CI.isSpilledToReg()) {
         BuildMI(RestoreBlock, I, DebugLoc(), TII.get(TargetOpcode::COPY), Reg)
           .addReg(CI.getDstReg(), getKillRegState(true));

@@ -475,8 +475,10 @@ void AsmWriterEmitter::EmitPrintInstruction(
     << (PassSubtarget ? "const MCSubtargetInfo &STI, " : "")
     << "raw_ostream &O) {\n";
 
+#ifndef MOVIDIUS_REQUIRED
   // Emit the initial tab character.
   O << "  O << \"\\t\";\n\n";
+#endif // MOVIDIUS_REQUIRED
 
   // Emit the starting string.
   O << "  auto MnemonicInfo = getMnemonic(MI);\n\n";

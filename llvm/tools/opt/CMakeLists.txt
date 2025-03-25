@@ -27,6 +27,10 @@ set(LLVM_LINK_COMPONENTS
   TransformUtils
   Vectorize
   Passes
+#ifdef MOVIDIUS_PUSHBACK
+# This pass compensates for ISO C's UACs for better vectorisation
+  ExtendTruncateReduction
+#endif // MOVIDIUS_PUSHBACK
   )
 
 add_llvm_tool(opt

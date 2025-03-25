@@ -1599,11 +1599,18 @@ void VectorLegalizer::ExpandUINT_TO_FLOAT(SDNode *Node,
     return;
   }
 
+#ifdef MOVIDIUS_REQUIRED  
+  EVT DstSTy = Node->getValueType(0).getScalarType();
+#endif // MOVIDIUS_REQUIRED
   // Make sure that the SINT_TO_FP and SRL instructions are available.
   if (((!IsStrict && TLI.getOperationAction(ISD::SINT_TO_FP, VT) ==
                          TargetLowering::Expand) ||
        (IsStrict && TLI.getOperationAction(ISD::STRICT_SINT_TO_FP, VT) ==
                         TargetLowering::Expand)) ||
+#ifdef MOVIDIUS_REQUIRED
+      // Temporarily, f16's UINT_TO_FP is unrolled.
+      DstSTy.getSimpleVT() == MVT::f16 ||
+#endif // MOVIDIUS_REQUIRED
       TLI.getOperationAction(ISD::SRL, VT) == TargetLowering::Expand) {
     if (IsStrict) {
       UnrollStrictFPOp(Node, Results);
@@ -1615,16 +1622,31 @@ void VectorLegalizer::ExpandUINT_TO_FLOAT(SDNode *Node,
   }
 
   unsigned BW = VT.getScalarSizeInBits();
+#ifndef MOVIDIUS_REQUIRED
   assert((BW == 64 || BW == 32) &&
          "Elements in vector-UINT_TO_FP must be 32 or 64 bits wide");
+#else // MOVIDIUS_REQUIRED
+  assert((BW == 64 || BW == 32 || BW == 16) &&
+         "Elements in vector-UINT_TO_FP must be 16, 32 or 64 bits wide");
+#endif // MOVIDIUS_REQUIRED
 
   SDValue HalfWord = DAG.getConstant(BW / 2, DL, VT);
 
   // Constants to clear the upper part of the word.
   // Notice that we can also use SHL+SHR, but using a constant is slightly
   // faster on x86.
+#ifndef MOVIDIUS_REQUIRED
   uint64_t HWMask = (BW == 64) ? 0x00000000FFFFFFFF : 0x0000FFFF;
-  SDValue HalfWordMask = DAG.getConstant(HWMask, DL, VT);
+#else // MOVIDIUS_REQUIRED
+  uint64_t HWMask = 0;
+  if(BW == 16)
+      HWMask = 0x00000000000000FFull;
+  else if(BW == 32)
+      HWMask = 0x000000000000FFFFull;
+  else // BW == 64
+      HWMask = 0x00000000FFFFFFFFull;
+#endif // MOVIDIUS_REQUIRED
+   SDValue HalfWordMask = DAG.getConstant(HWMask, DL, VT);
 
   // Two to the power of half-word-size.
   SDValue TWOHW =

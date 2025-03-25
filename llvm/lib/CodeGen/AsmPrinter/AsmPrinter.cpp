@@ -460,6 +460,10 @@ bool AsmPrinter::doInitialization(Module &M) {
   const_cast<TargetLoweringObjectFile &>(getObjFileLowering())
       .getModuleMetadata(M);
 
+#ifdef MOVIDIUS_REQUIRED
+  // Prevent LLVM from automatically starting each assembly file with ".text"
+  if (TM.getTargetTriple().getArch() != Triple::shave)
+#endif // MOVIDIUS_REQUIRED
   // On AIX, we delay emitting any section information until
   // after emitting the .file pseudo-op. This allows additional
   // information (such as the embedded command line) to be associated
@@ -792,6 +796,12 @@ void AsmPrinter::emitGlobalVariable(const GlobalVariable *GV) {
   }
 
   // Handle common symbols
+#ifdef MOVIDIUS_FIXME
+  // FIXME: Movidius - 'moviAsm' does not support the '.comm' directive, so need a way to
+  // simply place this in a BSS section - or alternatively, get 'moviAsm' to implement
+  // the '.comm' directive.  So disable this for SHAVE
+  if (TM.getTargetTriple().getArch() != Triple::shave)
+#endif // MOVIDIUS_FIXME
   if (GVKind.isCommon()) {
     if (Size == 0) Size = 1;   // .comm Foo, 0 is undefined, avoid it.
     // .comm _foo, 42, 4
@@ -804,6 +814,12 @@ void AsmPrinter::emitGlobalVariable(const GlobalVariable *GV) {
 
   // If we have a bss global going to a section that supports the
   // zerofill directive, do so here.
+#ifdef MOVIDIUS_FIXME
+  // FIXME: Movidius - 'moviAsm' does not support the '.comm' directive, so need a way to
+  // simply place this in a BSS section - or alternatively, get 'moviAsm' to implement
+  // the '.comm' directive.  So disable this for SHAVE
+  if (TM.getTargetTriple().getArch() != Triple::shave)
+#endif // MOVIDIUS_FIXME
   if (GVKind.isBSS() && MAI->hasMachoZeroFillDirective() &&
       TheSection->isVirtualSection()) {
     if (Size == 0)
@@ -3113,7 +3129,12 @@ void AsmPrinter::emitAlignment(Align Alignment, const GlobalObject *GV,
       STI = TM.getMCSubtargetInfo();
     OutStreamer->emitCodeAlignment(Alignment, STI, MaxBytesToEmit);
   } else
+#ifndef MOVIDIUS_PUSHBACK
     OutStreamer->emitValueToAlignment(Alignment, 0, 1, MaxBytesToEmit);
+#else
+    OutStreamer->emitValueToAlignment(Alignment, std::nullopt, 1,
+                                      MaxBytesToEmit);
+#endif
 }
 
 //===----------------------------------------------------------------------===//

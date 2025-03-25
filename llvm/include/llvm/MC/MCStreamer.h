@@ -868,7 +868,12 @@ public:
   /// \param MaxBytesToEmit - The maximum numbers of bytes to emit, or 0. If
   /// the alignment cannot be reached in this many bytes, no bytes are
   /// emitted.
+#ifndef MOVIDIUS_PUSHBACK
   virtual void emitValueToAlignment(Align Alignment, int64_t Value = 0,
+#else
+  virtual void emitValueToAlignment(Align Alignment,
+                                    std::optional<int64_t> Value = 0,
+#endif
                                     unsigned ValueSize = 1,
                                     unsigned MaxBytesToEmit = 0);
 

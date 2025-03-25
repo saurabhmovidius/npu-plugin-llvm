@@ -130,6 +130,10 @@ public:
     SVML,             // Intel short vector math library.
     SLEEFGNUABI, // SLEEF - SIMD Library for Evaluating Elementary Functions.
     ArmPL        // Arm Performance Libraries.
+#ifdef MOVIDIUS_REQUIRED
+    ,
+    SHAVEVL           // Intel SHAVE vector library
+#endif // MOVIDIUS_REQUIRED
   };
 
   TargetLibraryInfoImpl();

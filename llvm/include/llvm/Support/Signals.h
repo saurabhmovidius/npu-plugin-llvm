@@ -123,6 +123,14 @@ namespace sys {
   void CleanupOnSignal(uintptr_t Context);
 
   void unregisterHandlers();
+
+#ifdef MOVIDIUS_REQUIRED
+  // See Bugzilla bug #32821. Certain resources don't get cleaned up by LLVM so we
+  // have to do it here. This should only be used by the DLL builds of clang. Default
+  // behaviour remains the same for all other tools that use this support library.
+  void TeardownDLL();
+#endif // MOVIDIUS_REQUIRED
+
 } // End sys namespace
 } // End llvm namespace
 
