@@ -27,7 +27,7 @@
 #ifdef _WIN32
 // FIXME-LLVM11 #include "Windows/WindowsSupport.h"
 #endif
-
+#if 0
 using namespace llvm;
 using namespace llvm::sys;
 
@@ -46,3 +46,4 @@ InitLLVMDLL::~InitLLVMDLL() {
   TeardownDLL();
 #endif // _WIN32
 }
+#endif
